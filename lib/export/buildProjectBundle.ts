@@ -23,12 +23,26 @@ export default function RootLayout({
   );
 }`;
 
-    const appPageContent = `export default function Home() {
+    const appPageContent = `import Link from "next/link";
+import { Button } from "@/components/ui/button";
+
+export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white">
-      <main className="text-center p-8">
-        <h1 className="text-4xl font-bold mb-4">${idea || "Untitled Project"}</h1>
-        <p className="text-xl text-gray-400">Welcome to your new ${platform ? displayMap[platform] || platform : "app"}.</p>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-950 text-white selection:bg-blue-500/30">
+      <main className="text-center px-6 py-24 max-w-4xl mx-auto space-y-8">
+        <h1 className="text-5xl md:text-6xl font-bold tracking-tight text-white">
+          ${idea || "Untitled Project"}
+        </h1>
+        <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
+          ${coreFeature || "A powerful new application."} Built for ${targetUsers || "everyone"}.
+        </p>
+        <div className="pt-8">
+          <Link href="/dashboard">
+            <Button variant="primary" className="rounded-full px-8 py-4 text-base shadow-lg shadow-blue-500/20">
+              Get Started
+            </Button>
+          </Link>
+        </div>
       </main>
     </div>
   );
@@ -37,54 +51,89 @@ export default function RootLayout({
     const dashboardPageContent = `export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
-      <aside className="w-64 border-r border-gray-800 p-6 hidden md:block">
-        <h2 className="text-xl font-bold mb-8">Dashboard</h2>
+      <aside className="w-64 border-r border-white/10 p-6 hidden md:block bg-gray-900/50">
+        <h2 className="text-xl font-bold mb-8 text-white">${idea || "App"}</h2>
         <nav className="space-y-4">
-          <a href="#" className="block text-gray-400 hover:text-white">Overview</a>
-          <a href="#" className="block text-gray-400 hover:text-white">Settings</a>
+          <a href="#" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Overview</a>
+          <a href="#" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Settings</a>
         </nav>
       </aside>
-      <main className="flex-1 p-8">
-        <h1 className="text-3xl font-bold mb-6">Welcome Back</h1>
-        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
-           <p className="text-gray-300">This is the dashboard for ${idea || "your project"}.</p>
+      <main className="flex-1 p-8 lg:p-12">
+        <header className="mb-8 flex items-center justify-between">
+            <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div className="bg-white/5 p-6 rounded-2xl border border-white/10 shadow-sm">
+                <h3 className="text-sm font-medium text-gray-400 mb-2">Total Users</h3>
+                <p className="text-3xl font-bold text-white">0</p>
+            </div>
+            <div className="bg-white/5 p-6 rounded-2xl border border-white/10 shadow-sm">
+                <h3 className="text-sm font-medium text-gray-400 mb-2">Platform</h3>
+                <p className="text-xl font-semibold text-white mt-1">${platform ? displayMap[platform] || platform : "Web App"}</p>
+            </div>
         </div>
+
+        <section>
+            <h2 className="text-lg font-semibold text-white mb-4">Recent Activity</h2>
+            <div className="bg-white/5 p-8 rounded-2xl border border-white/10 flex flex-col items-center justify-center text-center">
+                <p className="text-gray-400 text-sm">No activity to display yet. Your ${businessModel ? displayMap[businessModel] || businessModel : "application"} is ready.</p>
+            </div>
+        </section>
       </main>
     </div>
   );
 }`;
 
-    const buttonComponentContent = `import React, { ComponentProps } from "react";
+    const buttonComponentContent = `import * as React from "react";
 
-interface ButtonProps extends ComponentProps<"button"> {
+export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: "primary" | "secondary";
 }
 
-export function Button({ variant = "primary", className = "", ...props }: ButtonProps) {
-  const baseStyles = "px-4 py-2 rounded-md font-medium transition-colors";
-  const variants = {
-    primary: "bg-blue-600 text-white hover:bg-blue-700",
-    secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300"
-  };
-  
-  return <button className={\`\${baseStyles} \${variants[variant]} \${className}\`} {...props} />;
-}`;
+export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+  ({ className = "", variant = "primary", ...props }, ref) => {
+    const baseStyles = "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-white/30 disabled:pointer-events-none disabled:opacity-50 active:scale-95";
+    
+    const variants = {
+      primary: "bg-blue-600 text-white hover:bg-blue-700 shadow-sm",
+      secondary: "bg-white/10 text-white hover:bg-white/20 border border-white/10"
+    };
+    
+    return (
+      <button
+        ref={ref}
+        className={\`\${baseStyles} \${variants[variant]} \${className}\`}
+        {...props}
+      />
+    );
+  }
+);
+Button.displayName = "Button";`;
 
     const typesContent = `export type Project = {
   id: string;
-  name: string;
-  createdAt: Date;
+  title: string;
+  platform: string;
+  businessModel: string;
+  targetUsers: string;
+  coreFeature: string;
+  createdAt: string;
 };
 
 export type User = {
   id: string;
   email: string;
+  name?: string;
   role: "admin" | "user";
+  createdAt: string;
 };
 
-export type DashboardCard = {
-  title: string;
+export type DashboardStat = {
+  label: string;
   value: number | string;
+  trend?: string;
+  trendDirection?: "up" | "down" | "neutral";
 };`;
 
     return {
