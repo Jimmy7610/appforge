@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState } from "react";
+import JSZip from "jszip";
 import { generateBlueprint } from "@/lib/ai/generateBlueprint";
 
 function BlueprintContent() {
@@ -195,6 +196,69 @@ function BlueprintContent() {
         URL.revokeObjectURL(url);
     };
 
+    const handleExportZip = async () => {
+        const appPageContent = `export default function Home() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gray-900 text-white">
+      <main className="text-center p-8">
+        <h1 className="text-4xl font-bold mb-4">${idea || "Untitled Project"}</h1>
+        <p className="text-xl text-gray-400">Welcome to your new ${platform ? displayMap[platform] || platform : "app"}.</p>
+      </main>
+    </div>
+  );
+}`;
+
+        const dashboardPageContent = `export default function Dashboard() {
+  return (
+    <div className="flex min-h-screen bg-gray-900 text-white">
+      <aside className="w-64 border-r border-gray-800 p-6 hidden md:block">
+        <h2 className="text-xl font-bold mb-8">Dashboard</h2>
+        <nav className="space-y-4">
+          <a href="#" className="block text-gray-400 hover:text-white">Overview</a>
+          <a href="#" className="block text-gray-400 hover:text-white">Settings</a>
+        </nav>
+      </aside>
+      <main className="flex-1 p-8">
+        <h1 className="text-3xl font-bold mb-6">Welcome Back</h1>
+        <div className="bg-gray-800 p-6 rounded-xl border border-gray-700">
+           <p className="text-gray-300">This is the dashboard for ${idea || "your project"}.</p>
+        </div>
+      </main>
+    </div>
+  );
+}`;
+
+        const zip = new JSZip();
+
+        zip.file("README.md", `# Project Overview\n\n${idea || "No idea provided"}\n\n## Target Users\n${targetUsers || "Not provided"}\n\n## Core Feature\n${coreFeature || "Not provided"}\n\n## Suggested Tech Stack\n${blueprint.techStack.map(t => `- ${t}`).join("\n")}`);
+
+        const docs = zip.folder("docs");
+        docs?.file("PROJECT_SPEC.md", `# Project Specification\n\n**App Idea:**\n${idea || "Not provided"}\n\n**Platform:**\n${platform ? displayMap[platform] || platform : "Not provided"}\n\n**Business Model:**\n${businessModel ? displayMap[businessModel] || businessModel : "Not provided"}\n\n**Target Users:**\n${targetUsers || "Not provided"}\n\n**Core Feature:**\n${coreFeature || "Not provided"}\n\n**Features Summary:**\n${blueprint.features.map(f => `- ${f}`).join("\n")}`);
+        docs?.file("DATABASE_SCHEMA.md", `# Database Schema\n\n${blueprint.databaseTables.map(t => `- ${t}`).join("\n")}`);
+        docs?.file("API_ROUTES.md", `# API Routes\n\n${blueprint.apiRoutes.map(r => `- ${r}`).join("\n")}`);
+        docs?.file("TASKS.md", `# Tasks & Roadmap\n\n## Roadmap\n${blueprint.roadmap.map(r => `- [ ] ${r}`).join("\n")}\n\n## Features to Implement\n${blueprint.features.map(f => `- [ ] ${f}`).join("\n")}`);
+
+        const app = zip.folder("app");
+        app?.file("page.tsx", appPageContent);
+
+        const dashboard = app?.folder("dashboard");
+        dashboard?.file("page.tsx", dashboardPageContent);
+
+        try {
+            const content = await zip.generateAsync({ type: "blob" });
+            const url = URL.createObjectURL(content);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "appforge-project.zip";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (e) {
+            console.error("Failed to generate zip", e);
+        }
+    };
+
     return (
         <>
             {/* Header section */}
@@ -218,6 +282,12 @@ function BlueprintContent() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap justify-end">
+                        <button
+                            onClick={handleExportZip}
+                            className="hidden rounded-full border border-white/20 bg-white/5 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95 xl:block"
+                        >
+                            Export ZIP Package
+                        </button>
                         <button
                             onClick={handleExportBundle}
                             className="hidden rounded-full border border-white/20 bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-95 xl:block"
@@ -384,6 +454,12 @@ function BlueprintContent() {
 
             {/* Mobile Save Button */}
             <div className="mt-8 flex flex-col gap-3 sm:hidden">
+                <button
+                    onClick={handleExportZip}
+                    className="w-full rounded-full border border-white/20 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95"
+                >
+                    Export ZIP Package
+                </button>
                 <button
                     onClick={handleExportBundle}
                     className="w-full rounded-full border border-white/20 bg-transparent px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-95"
