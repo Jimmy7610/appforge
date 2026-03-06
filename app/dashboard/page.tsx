@@ -20,6 +20,7 @@ export default function Dashboard() {
     const [searchQuery, setSearchQuery] = useState("");
     const [platformFilter, setPlatformFilter] = useState("all");
     const [businessModelFilter, setBusinessModelFilter] = useState("all");
+    const [sortOption, setSortOption] = useState("newest");
     const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -125,6 +126,23 @@ export default function Dashboard() {
         return matchesSearch && matchesPlatform && matchesBusinessModel;
     });
 
+    const sortedProjects = [...filteredProjects].sort((a, b) => {
+        if (sortOption === "newest") {
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        } else if (sortOption === "oldest") {
+            return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+        } else if (sortOption === "idea-az") {
+            const titleA = a.idea?.toLowerCase() || "";
+            const titleB = b.idea?.toLowerCase() || "";
+            return titleA.localeCompare(titleB);
+        } else if (sortOption === "idea-za") {
+            const titleA = a.idea?.toLowerCase() || "";
+            const titleB = b.idea?.toLowerCase() || "";
+            return titleB.localeCompare(titleA);
+        }
+        return 0;
+    });
+
     // Prevent hydration mismatch by returning null until mounted on client
     if (!mounted) {
         return (
@@ -172,35 +190,52 @@ export default function Dashboard() {
 
                 {/* Search & Filters */}
                 {projects.length > 0 && (
-                    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
-                        <input
-                            type="text"
-                            placeholder="Search projects..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30"
-                        />
-                        <select
-                            value={platformFilter}
-                            onChange={(e) => setPlatformFilter(e.target.value)}
-                            className="w-full sm:w-48 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
-                        >
-                            <option value="all">All Platforms</option>
-                            <option value="web">Web App</option>
-                            <option value="mobile">Mobile App</option>
-                            <option value="desktop">Desktop App</option>
-                        </select>
-                        <select
-                            value={businessModelFilter}
-                            onChange={(e) => setBusinessModelFilter(e.target.value)}
-                            className="w-full sm:w-48 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
-                        >
-                            <option value="all">All Business Models</option>
-                            <option value="free">Free Tool</option>
-                            <option value="saas">SaaS</option>
-                            <option value="marketplace">Marketplace</option>
-                            <option value="internal">Internal Tool</option>
-                        </select>
+                    <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center">
+                        <div className="flex-1">
+                            <input
+                                type="text"
+                                placeholder="Search projects..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30"
+                            />
+                        </div>
+                        <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+                            <select
+                                value={platformFilter}
+                                onChange={(e) => setPlatformFilter(e.target.value)}
+                                className="w-full sm:w-auto min-w-[160px] rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
+                            >
+                                <option value="all">All Platforms</option>
+                                <option value="web">Web App</option>
+                                <option value="mobile">Mobile App</option>
+                                <option value="desktop">Desktop App</option>
+                            </select>
+                            <select
+                                value={businessModelFilter}
+                                onChange={(e) => setBusinessModelFilter(e.target.value)}
+                                className="w-full sm:w-auto min-w-[180px] rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
+                            >
+                                <option value="all">All Business Models</option>
+                                <option value="free">Free Tool</option>
+                                <option value="saas">SaaS</option>
+                                <option value="marketplace">Marketplace</option>
+                                <option value="internal">Internal Tool</option>
+                            </select>
+                            <div className="flex items-center gap-3 w-full sm:w-auto">
+                                <span className="text-sm font-medium text-zinc-400 whitespace-nowrap hidden sm:block">Sort By</span>
+                                <select
+                                    value={sortOption}
+                                    onChange={(e) => setSortOption(e.target.value)}
+                                    className="w-full sm:w-auto min-w-[160px] rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
+                                >
+                                    <option value="newest">Newest First</option>
+                                    <option value="oldest">Oldest First</option>
+                                    <option value="idea-az">Idea A-Z</option>
+                                    <option value="idea-za">Idea Z-A</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
                 )}
 
@@ -219,7 +254,7 @@ export default function Dashboard() {
                                 Get started by creating a new project.
                             </p>
                         </div>
-                    ) : filteredProjects.length === 0 ? (
+                    ) : sortedProjects.length === 0 ? (
                         <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-12 text-center shadow-lg backdrop-blur-sm sm:p-20">
                             <h3 className="text-lg font-medium text-zinc-200">No matching projects found</h3>
                             <p className="mt-2 text-sm text-zinc-400">
@@ -228,7 +263,7 @@ export default function Dashboard() {
                         </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {filteredProjects.map((project) => (
+                            {sortedProjects.map((project) => (
                                 <div
                                     key={project.id}
                                     className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur-sm transition-all hover:border-white/20"
