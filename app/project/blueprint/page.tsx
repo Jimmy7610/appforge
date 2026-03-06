@@ -212,11 +212,15 @@ function BlueprintContent() {
         docs?.file("TASKS.md", bundleData.files["docs/TASKS.md"]);
 
         const app = zip.folder("app");
+        app?.file("globals.css", bundleData.files["app/globals.css"]);
         app?.file("page.tsx", bundleData.files["app/page.tsx"]);
         app?.file("layout.tsx", bundleData.files["app/layout.tsx"]);
 
         const dashboard = app?.folder("dashboard");
         dashboard?.file("page.tsx", bundleData.files["app/dashboard/page.tsx"]);
+
+        const projectsFolder = app?.folder("projects");
+        projectsFolder?.file("page.tsx", bundleData.files["app/projects/page.tsx"]);
 
         const components = zip.folder("components");
         const ui = components?.folder("ui");
@@ -224,6 +228,7 @@ function BlueprintContent() {
 
         const lib = zip.folder("lib");
         lib?.file("types.ts", bundleData.files["lib/types.ts"]);
+        lib?.file("mock-data.ts", bundleData.files["lib/mock-data.ts"]);
 
         try {
             const content = await zip.generateAsync({ type: "blob" });

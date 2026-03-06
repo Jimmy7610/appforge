@@ -136,6 +136,107 @@ export type DashboardStat = {
   trendDirection?: "up" | "down" | "neutral";
 };`;
 
+    const globalsCssContent = `@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+body {
+  @apply bg-gray-950 text-white antialiased;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+::selection {
+  @apply bg-blue-500/30;
+}
+
+* {
+  @apply border-white/10;
+}`;
+
+    const projectsPageContent = `import { projects } from "@/lib/mock-data";
+import type { Project } from "@/lib/types";
+
+export default function ProjectsPage() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      <main className="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Projects</h1>
+          <p className="mt-2 text-sm text-gray-400">
+            Browse and manage your ${idea || "application"} projects.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {projects.map((project: Project) => (
+            <div
+              key={project.id}
+              className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm transition-all hover:border-white/20"
+            >
+              <div>
+                <div className="mb-3 flex items-center justify-between text-xs text-gray-500">
+                  <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-gray-300">
+                    {project.platform}
+                  </span>
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-white">
+                  {project.title}
+                </h3>
+                <p className="text-sm text-gray-400 line-clamp-2">
+                  {project.coreFeature}
+                </p>
+              </div>
+              <div className="mt-6">
+                <button className="w-full rounded-full bg-white/10 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20">
+                  View Details
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}`;
+
+    const mockDataContent = `import type { Project } from "@/lib/types";
+
+export const projects: Project[] = [
+  {
+    id: "1",
+    title: "${idea || "Core Platform"}",
+    platform: "${platform ? displayMap[platform] || platform : "Web App"}",
+    businessModel: "${businessModel ? displayMap[businessModel] || businessModel : "SaaS"}",
+    targetUsers: "${targetUsers || "General users"}",
+    coreFeature: "${coreFeature || "Main application feature"}",
+    createdAt: new Date().toISOString(),
+  },
+  {
+    id: "2",
+    title: "${idea ? idea + " v2" : "Mobile Companion"}",
+    platform: "Mobile App",
+    businessModel: "Free Tool",
+    targetUsers: "${targetUsers || "Mobile users"}",
+    coreFeature: "Companion app with push notifications and offline support",
+    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
+  },
+  {
+    id: "3",
+    title: "${idea ? idea + " Admin" : "Admin Dashboard"}",
+    platform: "Web App",
+    businessModel: "Internal Tool",
+    targetUsers: "Team administrators",
+    coreFeature: "Analytics dashboard with user management and reporting",
+    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
+  },
+];`;
+
     return {
         projectName: idea || "appforge-project",
         idea: idea || "",
@@ -150,11 +251,14 @@ export type DashboardStat = {
             "docs/DATABASE_SCHEMA.md": `# Database Schema\n\n${blueprint.databaseTables.map(t => `- ${t}`).join("\n")}`,
             "docs/API_ROUTES.md": `# API Routes\n\n${blueprint.apiRoutes.map(r => `- ${r}`).join("\n")}`,
             "docs/TASKS.md": `# Tasks & Roadmap\n\n## Roadmap\n${blueprint.roadmap.map(r => `- [ ] ${r}`).join("\n")}\n\n## Features to Implement\n${blueprint.features.map(f => `- [ ] ${f}`).join("\n")}`,
+            "app/globals.css": globalsCssContent,
             "app/layout.tsx": appLayoutContent,
             "app/page.tsx": appPageContent,
             "app/dashboard/page.tsx": dashboardPageContent,
+            "app/projects/page.tsx": projectsPageContent,
             "components/ui/button.tsx": buttonComponentContent,
-            "lib/types.ts": typesContent
+            "lib/types.ts": typesContent,
+            "lib/mock-data.ts": mockDataContent
         }
     };
 }
