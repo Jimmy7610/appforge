@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
 import { generateBlueprint } from "@/lib/ai/generateBlueprint";
 
 function BlueprintContent() {
@@ -36,7 +36,11 @@ function BlueprintContent() {
     };
 
     // Generate blueprint on the fly based on current URL parameters
-    const blueprint = generateBlueprint(input);
+    const [blueprint, setBlueprint] = useState(() => generateBlueprint(input));
+
+    const handleRegenerate = () => {
+        setBlueprint(generateBlueprint(input));
+    };
 
     const handleSave = () => {
         const newProject = {
@@ -84,12 +88,20 @@ function BlueprintContent() {
                             Here is the first structured blueprint for your project idea.
                         </p>
                     </div>
-                    <button
-                        onClick={handleSave}
-                        className="hidden rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 hover:shadow-white/20 active:scale-95 sm:block"
-                    >
-                        Save Blueprint
-                    </button>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleRegenerate}
+                            className="hidden rounded-full border border-white/20 bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-95 sm:block"
+                        >
+                            Regenerate Blueprint
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            className="hidden rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 hover:shadow-white/20 active:scale-95 sm:block"
+                        >
+                            Save Blueprint
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -224,7 +236,13 @@ function BlueprintContent() {
             </div>
 
             {/* Mobile Save Button */}
-            <div className="mt-8 flex justify-end sm:hidden">
+            <div className="mt-8 flex flex-col gap-3 sm:hidden">
+                <button
+                    onClick={handleRegenerate}
+                    className="w-full rounded-full border border-white/20 bg-transparent px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-95"
+                >
+                    Regenerate Blueprint
+                </button>
                 <button
                     onClick={handleSave}
                     className="w-full rounded-full bg-white px-8 py-4 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 active:scale-95"
