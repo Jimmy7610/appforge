@@ -101,6 +101,45 @@ function BlueprintContent() {
         }
     };
 
+    const handleUpdate = () => {
+        if (!idParam) return;
+
+        try {
+            const stored = localStorage.getItem("appforge_blueprints");
+            if (!stored) {
+                window.alert("Project could not be updated.");
+                return;
+            }
+
+            const blueprints = JSON.parse(stored);
+            const index = blueprints.findIndex((p: any) => p.id === idParam);
+
+            if (index === -1) {
+                window.alert("Project could not be updated.");
+                return;
+            }
+
+            const existing = blueprints[index];
+            const updatedProject = {
+                ...existing,
+                idea: idea || "",
+                platform: platform || "",
+                businessModel: businessModel || "",
+                targetUsers: targetUsers || "",
+                coreFeature: coreFeature || "",
+                generatedBlueprint: blueprint
+            };
+
+            blueprints[index] = updatedProject;
+            localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
+
+            window.alert("Project updated successfully.");
+        } catch (e) {
+            console.error("Failed to update blueprint", e);
+            window.alert("Project could not be updated.");
+        }
+    };
+
     const handleExport = () => {
         if (!blueprint) return;
         const starterPack = buildStarterPack({ idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap });
@@ -235,7 +274,7 @@ function BlueprintContent() {
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="mr-2 h-4 w-4">
                         <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
                     </svg>
-                    Back to Details
+                    {idParam ? "Back to Dashboard" : "Back to Details"}
                 </Link>
                 <div className="flex items-center justify-between">
                     <div>
@@ -277,6 +316,14 @@ function BlueprintContent() {
                         >
                             Regenerate Blueprint
                         </button>
+                        {idParam && (
+                            <button
+                                onClick={handleUpdate}
+                                className="hidden rounded-full border border-white/20 bg-zinc-800 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-zinc-700 active:scale-95 sm:block"
+                            >
+                                Update Project
+                            </button>
+                        )}
                         <button
                             onClick={handleSave}
                             className="hidden rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 hover:shadow-white/20 active:scale-95 sm:block"
@@ -468,6 +515,14 @@ function BlueprintContent() {
                 >
                     Regenerate Blueprint
                 </button>
+                {idParam && (
+                    <button
+                        onClick={handleUpdate}
+                        className="w-full rounded-full border border-white/20 bg-zinc-800 px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-zinc-700 active:scale-95"
+                    >
+                        Update Project
+                    </button>
+                )}
                 <button
                     onClick={handleSave}
                     className="w-full rounded-full bg-white px-8 py-4 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 active:scale-95"
