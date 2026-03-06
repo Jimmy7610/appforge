@@ -229,7 +229,7 @@ function BlueprintContent() {
             {/* Header section */}
             <div className="mb-8">
                 <Link
-                    href="/project/new/details"
+                    href={idParam ? "/dashboard" : "/project/new/details"}
                     className="mb-6 inline-flex items-center text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
                 >
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="mr-2 h-4 w-4">
@@ -290,55 +290,74 @@ function BlueprintContent() {
             {/* User Input Summary Card */}
             <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
                 <div className="space-y-8">
+                    {idParam && (
+                        <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4 text-sm text-blue-200">
+                            You are editing a saved project preview. Saving will create a new blueprint entry.
+                        </div>
+                    )}
                     {/* App Idea Section */}
                     <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">App Idea</h3>
-                        <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
-                            <p className="text-zinc-200 leading-relaxed">
-                                {idea || <span className="text-zinc-500 italic">Not provided</span>}
-                            </p>
-                        </div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">App Idea</h3>
+                        <textarea
+                            value={idea || ""}
+                            onChange={(e) => setIdea(e.target.value)}
+                            className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[100px]"
+                            placeholder="Enter your app idea..."
+                        />
                     </div>
 
                     {/* Grid for Platform & Business Model */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                         <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Platform</h3>
-                            <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5 flex items-center h-[72px]">
-                                <p className="text-zinc-200 font-medium font-sans">
-                                    {platform ? (displayMap[platform] || platform) : <span className="text-zinc-500 italic font-normal">Not provided</span>}
-                                </p>
-                            </div>
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Platform</h3>
+                            <select
+                                value={platform || ""}
+                                onChange={(e) => setPlatform(e.target.value)}
+                                className="w-full h-[56px] rounded-xl bg-zinc-900/50 px-4 border border-white/10 text-zinc-200 outline-none focus:border-white/30 transition-colors appearance-none font-sans"
+                            >
+                                <option value="" disabled>Select platform</option>
+                                <option value="web">Web App</option>
+                                <option value="mobile">Mobile App</option>
+                                <option value="desktop">Desktop App</option>
+                            </select>
                         </div>
 
                         <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Business Model</h3>
-                            <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5 flex items-center h-[72px]">
-                                <p className="text-zinc-200 font-medium font-sans">
-                                    {businessModel ? (displayMap[businessModel] || businessModel) : <span className="text-zinc-500 italic font-normal">Not provided</span>}
-                                </p>
-                            </div>
+                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Business Model</h3>
+                            <select
+                                value={businessModel || ""}
+                                onChange={(e) => setBusinessModel(e.target.value)}
+                                className="w-full h-[56px] rounded-xl bg-zinc-900/50 px-4 border border-white/10 text-zinc-200 outline-none focus:border-white/30 transition-colors appearance-none font-sans"
+                            >
+                                <option value="" disabled>Select business model</option>
+                                <option value="free">Free Tool</option>
+                                <option value="saas">SaaS</option>
+                                <option value="marketplace">Marketplace</option>
+                                <option value="internal">Internal Tool</option>
+                            </select>
                         </div>
                     </div>
 
                     {/* Target Users */}
                     <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Target Users</h3>
-                        <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
-                            <p className="text-zinc-200 leading-relaxed font-sans">
-                                {targetUsers || <span className="text-zinc-500 italic">Not provided</span>}
-                            </p>
-                        </div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Target Users</h3>
+                        <textarea
+                            value={targetUsers || ""}
+                            onChange={(e) => setTargetUsers(e.target.value)}
+                            className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[80px]"
+                            placeholder="Who will use this app?"
+                        />
                     </div>
 
                     {/* Core Feature */}
                     <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Core Feature</h3>
-                        <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
-                            <p className="text-zinc-200 leading-relaxed font-sans">
-                                {coreFeature || <span className="text-zinc-500 italic">Not provided</span>}
-                            </p>
-                        </div>
+                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Core Feature</h3>
+                        <textarea
+                            value={coreFeature || ""}
+                            onChange={(e) => setCoreFeature(e.target.value)}
+                            className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[80px]"
+                            placeholder="What is the main feature?"
+                        />
                     </div>
                 </div>
             </div>
