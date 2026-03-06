@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import JSZip from "jszip";
-import { generateBlueprint } from "@/lib/ai/generateBlueprint";
+import { generateBlueprint, type Blueprint } from "@/lib/ai/generateBlueprint";
 import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
 import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
 import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
@@ -12,14 +12,10 @@ import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
 function BlueprintContent() {
     const searchParams = useSearchParams();
     const router = useRouter();
+    const [mounted, setMounted] = useState(false);
 
     const getParam = (key: string) => searchParams.get(key) || undefined;
-
-    const idea = getParam("idea");
-    const platform = getParam("platform");
-    const businessModel = getParam("businessModel");
-    const targetUsers = getParam("targetUsers");
-    const coreFeature = getParam("coreFeature");
+    const idParam = getParam("id");
 
     const displayMap: Record<string, string | undefined> = {
         web: "Web App",
@@ -31,19 +27,49 @@ function BlueprintContent() {
         internal: "Internal Tool"
     };
 
-    const input = {
-        idea,
-        platform,
-        businessModel,
-        targetUsers,
-        coreFeature
-    };
+    const [idea, setIdea] = useState(getParam("idea"));
+    const [platform, setPlatform] = useState(getParam("platform"));
+    const [businessModel, setBusinessModel] = useState(getParam("businessModel"));
+    const [targetUsers, setTargetUsers] = useState(getParam("targetUsers"));
+    const [coreFeature, setCoreFeature] = useState(getParam("coreFeature"));
+    const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
+    const [projectNotFound, setProjectNotFound] = useState(false);
 
-    // Generate blueprint on the fly based on current URL parameters
-    const [blueprint, setBlueprint] = useState(() => generateBlueprint(input));
+    useEffect(() => {
+        setMounted(true);
+        if (idParam) {
+            try {
+                const stored = localStorage.getItem("appforge_blueprints");
+                if (stored) {
+                    const blueprints = JSON.parse(stored);
+                    const foundProject = blueprints.find((p: any) => p.id === idParam);
+                    if (foundProject) {
+                        setIdea(foundProject.idea);
+                        setPlatform(foundProject.platform);
+                        setBusinessModel(foundProject.businessModel);
+                        setTargetUsers(foundProject.targetUsers);
+                        setCoreFeature(foundProject.coreFeature);
+                        setBlueprint(foundProject.generatedBlueprint);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error("Failed to load project from localStorage", e);
+            }
+            setProjectNotFound(true);
+        } else {
+            setBlueprint(generateBlueprint({
+                idea: getParam("idea"),
+                platform: getParam("platform"),
+                businessModel: getParam("businessModel"),
+                targetUsers: getParam("targetUsers"),
+                coreFeature: getParam("coreFeature")
+            }));
+        }
+    }, [idParam, searchParams]);
 
     const handleRegenerate = () => {
-        setBlueprint(generateBlueprint(input));
+        setBlueprint(generateBlueprint({ idea, platform, businessModel, targetUsers, coreFeature }));
     };
 
     const handleSave = () => {
@@ -64,13 +90,19 @@ function BlueprintContent() {
             blueprints.push(newProject);
             localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
 
-            router.push("/dashboard");
+            if (!idParam) {
+                router.push("/dashboard");
+            } else {
+                window.alert("Blueprint saved as a new copy!");
+                router.push("/dashboard");
+            }
         } catch (e) {
             console.error("Failed to save blueprint", e);
         }
     };
 
     const handleExport = () => {
+        if (!blueprint) return;
         const starterPack = buildStarterPack({ idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap });
 
         const exportData = {
@@ -95,6 +127,7 @@ function BlueprintContent() {
     };
 
     const handleExportMarkdown = () => {
+        if (!blueprint) return;
         const files = buildMarkdownFiles({ idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap });
 
         files.forEach(file => {
@@ -111,6 +144,7 @@ function BlueprintContent() {
     };
 
     const handleExportBundle = () => {
+        if (!blueprint) return;
         const bundleData = buildProjectBundle({ idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap });
 
         const blob = new Blob([JSON.stringify(bundleData, null, 2)], { type: "application/json" });
@@ -125,6 +159,7 @@ function BlueprintContent() {
     };
 
     const handleExportZip = async () => {
+        if (!blueprint) return;
         const bundleData = buildProjectBundle({ idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap });
 
         const zip = new JSZip();
@@ -165,6 +200,29 @@ function BlueprintContent() {
             console.error("Failed to generate zip", e);
         }
     };
+
+    if (!mounted || (idParam && !projectNotFound && !blueprint)) {
+        return <div className="text-zinc-500 text-center py-20">Loading...</div>;
+    }
+
+    if (projectNotFound) {
+        return (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+                <h2 className="text-3xl font-bold text-white mb-4">Project not found</h2>
+                <p className="text-zinc-400 mb-8">The requested blueprint could not be found or has been deleted.</p>
+                <Link
+                    href="/dashboard"
+                    className="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 active:scale-95"
+                >
+                    Return to Dashboard
+                </Link>
+            </div>
+        );
+    }
+
+    if (!blueprint) {
+        return null;
+    }
 
     return (
         <>
@@ -298,7 +356,7 @@ function BlueprintContent() {
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Features</h3>
                             <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
                                 <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                    {blueprint.features.map((item, idx) => (
+                                    {blueprint.features.map((item: string, idx: number) => (
                                         <li key={idx} className="leading-relaxed">{item}</li>
                                     ))}
                                 </ul>
@@ -311,7 +369,7 @@ function BlueprintContent() {
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Tech Stack</h3>
                                 <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5 h-full">
                                     <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                        {blueprint.techStack.map((item, idx) => (
+                                        {blueprint.techStack.map((item: string, idx: number) => (
                                             <li key={idx} className="leading-relaxed">{item}</li>
                                         ))}
                                     </ul>
@@ -323,7 +381,7 @@ function BlueprintContent() {
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Database Tables</h3>
                                 <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5 h-full">
                                     <ul className="list-inside list-disc space-y-2 text-zinc-300 font-mono text-sm">
-                                        {blueprint.databaseTables.map((item, idx) => (
+                                        {blueprint.databaseTables.map((item: string, idx: number) => (
                                             <li key={idx} className="leading-relaxed">{item}</li>
                                         ))}
                                     </ul>
@@ -336,7 +394,7 @@ function BlueprintContent() {
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">API Routes</h3>
                             <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
                                 <ul className="list-inside list-disc space-y-2 text-zinc-300 font-mono text-sm">
-                                    {blueprint.apiRoutes.map((item, idx) => (
+                                    {blueprint.apiRoutes.map((item: string, idx: number) => (
                                         <li key={idx} className="leading-relaxed">{item}</li>
                                     ))}
                                 </ul>
@@ -348,7 +406,7 @@ function BlueprintContent() {
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Development Roadmap</h3>
                             <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
                                 <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                    {blueprint.roadmap.map((item, idx) => (
+                                    {blueprint.roadmap.map((item: string, idx: number) => (
                                         <li key={idx} className="leading-relaxed">{item}</li>
                                     ))}
                                 </ul>

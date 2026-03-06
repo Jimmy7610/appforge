@@ -43,14 +43,7 @@ export default function Dashboard() {
     };
 
     const getBlueprintUrl = (project: SavedProject) => {
-        const params = new URLSearchParams();
-        if (project.idea) params.set("idea", project.idea);
-        if (project.platform) params.set("platform", project.platform);
-        if (project.businessModel) params.set("businessModel", project.businessModel);
-        if (project.targetUsers) params.set("targetUsers", project.targetUsers);
-        if (project.coreFeature) params.set("coreFeature", project.coreFeature);
-
-        return `/project/blueprint?${params.toString()}`;
+        return `/project/blueprint?id=${project.id}`;
     };
 
     const handleDelete = (id: string) => {
