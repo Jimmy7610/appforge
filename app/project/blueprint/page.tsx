@@ -239,6 +239,20 @@ function BlueprintContent() {
         lib?.file("types.ts", bundleData.files["lib/types.ts"]);
         lib?.file("mock-data.ts", bundleData.files["lib/mock-data.ts"]);
 
+        // Conditional feature-based pages
+        if (bundleData.files["app/profile/page.tsx"]) {
+            const profileFolder = app?.folder("profile");
+            profileFolder?.file("page.tsx", bundleData.files["app/profile/page.tsx"]);
+        }
+        if (bundleData.files["app/activity/page.tsx"]) {
+            const activityFolder = app?.folder("activity");
+            activityFolder?.file("page.tsx", bundleData.files["app/activity/page.tsx"]);
+        }
+        if (bundleData.files["app/team/page.tsx"]) {
+            const teamFolder = app?.folder("team");
+            teamFolder?.file("page.tsx", bundleData.files["app/team/page.tsx"]);
+        }
+
         try {
             const content = await zip.generateAsync({ type: "blob" });
             const url = URL.createObjectURL(content);

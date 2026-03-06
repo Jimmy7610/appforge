@@ -3,6 +3,12 @@ import { ExportInput } from "./buildStarterPack";
 export function buildProjectBundle(input: ExportInput) {
     const { idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap } = input;
 
+    // Feature detection helpers
+    const allText = [...blueprint.features, ...blueprint.databaseTables].map(s => s.toLowerCase()).join(" ");
+    const hasProfile = /auth|profile|user.?setting|account|login|signup|sign.?up/.test(allText);
+    const hasActivity = /activity|log|notification|event|feed|timeline/.test(allText);
+    const hasTeam = /team|collaborat|member|group|organization|workspace/.test(allText);
+
     const appLayoutContent = `import type { Metadata } from "next";
 import "./globals.css";
 
@@ -48,6 +54,15 @@ export default function Home() {
   );
 }`;
 
+    // Build dynamic sidebar links
+    const navLinks = [
+        `          <a href="/projects" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Projects</a>`,
+        `          <a href="/settings" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Settings</a>`,
+    ];
+    if (hasProfile) navLinks.push(`          <a href="/profile" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Profile</a>`);
+    if (hasActivity) navLinks.push(`          <a href="/activity" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Activity</a>`);
+    if (hasTeam) navLinks.push(`          <a href="/team" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Team</a>`);
+
     const dashboardPageContent = `import { StatCard } from "@/components/dashboard/stat-card";
 
 export default function Dashboard() {
@@ -56,8 +71,8 @@ export default function Dashboard() {
       <aside className="w-64 border-r border-white/10 p-6 hidden md:block bg-gray-900/50">
         <h2 className="text-xl font-bold mb-8 text-white">${idea || "App"}</h2>
         <nav className="space-y-4">
-          <a href="#" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Overview</a>
-          <a href="/settings" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Settings</a>
+          <a href="#" className="block text-sm font-medium text-white">Overview</a>
+${navLinks.join("\n")}
         </nav>
       </aside>
       <main className="flex-1 p-8 lg:p-12">
@@ -318,6 +333,168 @@ export function StatCard({ label, value, helperText }: StatCardProps) {
   );
 }`;
 
+    // Conditional feature-based pages
+    const profilePageContent = `export default function ProfilePage() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Profile</h1>
+          <p className="mt-2 text-sm text-gray-400">
+            Manage your account and preferences for ${idea || "the application"}.
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <div className="flex items-center gap-4 mb-6">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-blue-600 text-2xl font-bold text-white">
+                U
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-white">User Name</h2>
+                <p className="text-sm text-gray-400">user@example.com</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Role</span>
+                <span className="text-gray-200">Admin</span>
+              </div>
+              <div>
+                <span className="block text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">Member Since</span>
+                <span className="text-gray-200">Today</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white mb-4">Account Details</h2>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="block text-sm font-medium text-gray-200">Display Name</span>
+                  <span className="text-xs text-gray-500">How others see you</span>
+                </div>
+                <input type="text" defaultValue="User Name" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-200 outline-none focus:border-white/30 w-48" />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="block text-sm font-medium text-gray-200">Email</span>
+                  <span className="text-xs text-gray-500">Your account email address</span>
+                </div>
+                <input type="email" defaultValue="user@example.com" className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-200 outline-none focus:border-white/30 w-48" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}`;
+
+    const activityPageContent = `const recentActivity = [
+  { id: "1", action: "Project created", target: "${idea || "New Project"}", time: "Just now" },
+  { id: "2", action: "Blueprint generated", target: "Version 1.0", time: "2 minutes ago" },
+  { id: "3", action: "Settings updated", target: "Notifications", time: "1 hour ago" },
+  { id: "4", action: "Export completed", target: "Project bundle", time: "3 hours ago" },
+  { id: "5", action: "Team member invited", target: "collaborator@email.com", time: "Yesterday" },
+];
+
+export default function ActivityPage() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Activity</h1>
+          <p className="mt-2 text-sm text-gray-400">
+            Recent events and actions in your ${idea || "application"}.
+          </p>
+        </div>
+
+        <div className="rounded-2xl border border-white/10 bg-white/5 overflow-hidden">
+          <ul className="divide-y divide-white/5">
+            {recentActivity.map((item) => (
+              <li key={item.id} className="flex items-center justify-between px-6 py-4 hover:bg-white/5 transition-colors">
+                <div>
+                  <p className="text-sm font-medium text-white">{item.action}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{item.target}</p>
+                </div>
+                <span className="text-xs text-gray-500 whitespace-nowrap">{item.time}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </main>
+    </div>
+  );
+}`;
+
+    const teamPageContent = `const teamMembers = [
+  { id: "1", name: "Project Owner", email: "owner@example.com", role: "Admin", avatar: "PO" },
+  { id: "2", name: "Developer", email: "dev@example.com", role: "Editor", avatar: "DE" },
+  { id: "3", name: "Designer", email: "design@example.com", role: "Viewer", avatar: "DS" },
+];
+
+export default function TeamPage() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      <main className="mx-auto max-w-4xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Team</h1>
+            <p className="mt-2 text-sm text-gray-400">
+              Manage collaborators on ${idea || "your project"}.
+            </p>
+          </div>
+          <button className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors">
+            Invite Member
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {teamMembers.map((member) => (
+            <div key={member.id} className="rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-blue-600/20 text-lg font-bold text-blue-400">
+                {member.avatar}
+              </div>
+              <h3 className="text-sm font-semibold text-white">{member.name}</h3>
+              <p className="text-xs text-gray-400 mt-1">{member.email}</p>
+              <span className="mt-3 inline-block rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-gray-300">
+                {member.role}
+              </span>
+            </div>
+          ))}
+        </div>
+      </main>
+    </div>
+  );
+}`;
+
+    // Build the files object with conditional pages
+    const files: Record<string, string> = {
+        "README.md": `# Project Overview\n\n${idea || "No idea provided"}\n\n## Target Users\n${targetUsers || "Not provided"}\n\n## Core Feature\n${coreFeature || "Not provided"}\n\n## Suggested Tech Stack\n${blueprint.techStack.map(t => `- ${t}`).join("\n")}`,
+        "docs/PROJECT_SPEC.md": `# Project Specification\n\n**App Idea:**\n${idea || "Not provided"}\n\n**Platform:**\n${platform ? displayMap[platform] || platform : "Not provided"}\n\n**Business Model:**\n${businessModel ? displayMap[businessModel] || businessModel : "Not provided"}\n\n**Target Users:**\n${targetUsers || "Not provided"}\n\n**Core Feature:**\n${coreFeature || "Not provided"}\n\n**Features Summary:**\n${blueprint.features.map(f => `- ${f}`).join("\n")}`,
+        "docs/DATABASE_SCHEMA.md": `# Database Schema\n\n${blueprint.databaseTables.map(t => `- ${t}`).join("\n")}`,
+        "docs/API_ROUTES.md": `# API Routes\n\n${blueprint.apiRoutes.map(r => `- ${r}`).join("\n")}`,
+        "docs/TASKS.md": `# Tasks & Roadmap\n\n## Roadmap\n${blueprint.roadmap.map(r => `- [ ] ${r}`).join("\n")}\n\n## Features to Implement\n${blueprint.features.map(f => `- [ ] ${f}`).join("\n")}`,
+        "app/globals.css": globalsCssContent,
+        "app/layout.tsx": appLayoutContent,
+        "app/page.tsx": appPageContent,
+        "app/dashboard/page.tsx": dashboardPageContent,
+        "app/projects/page.tsx": projectsPageContent,
+        "app/settings/page.tsx": settingsPageContent,
+        "app/api/health/route.ts": healthRouteContent,
+        "components/ui/button.tsx": buttonComponentContent,
+        "components/dashboard/stat-card.tsx": statCardContent,
+        "lib/types.ts": typesContent,
+        "lib/mock-data.ts": mockDataContent,
+    };
+
+    if (hasProfile) files["app/profile/page.tsx"] = profilePageContent;
+    if (hasActivity) files["app/activity/page.tsx"] = activityPageContent;
+    if (hasTeam) files["app/team/page.tsx"] = teamPageContent;
+
     return {
         projectName: idea || "appforge-project",
         idea: idea || "",
@@ -326,23 +503,6 @@ export function StatCard({ label, value, helperText }: StatCardProps) {
         targetUsers: targetUsers || "",
         coreFeature: coreFeature || "",
         generatedBlueprint: blueprint,
-        files: {
-            "README.md": `# Project Overview\n\n${idea || "No idea provided"}\n\n## Target Users\n${targetUsers || "Not provided"}\n\n## Core Feature\n${coreFeature || "Not provided"}\n\n## Suggested Tech Stack\n${blueprint.techStack.map(t => `- ${t}`).join("\n")}`,
-            "docs/PROJECT_SPEC.md": `# Project Specification\n\n**App Idea:**\n${idea || "Not provided"}\n\n**Platform:**\n${platform ? displayMap[platform] || platform : "Not provided"}\n\n**Business Model:**\n${businessModel ? displayMap[businessModel] || businessModel : "Not provided"}\n\n**Target Users:**\n${targetUsers || "Not provided"}\n\n**Core Feature:**\n${coreFeature || "Not provided"}\n\n**Features Summary:**\n${blueprint.features.map(f => `- ${f}`).join("\n")}`,
-            "docs/DATABASE_SCHEMA.md": `# Database Schema\n\n${blueprint.databaseTables.map(t => `- ${t}`).join("\n")}`,
-            "docs/API_ROUTES.md": `# API Routes\n\n${blueprint.apiRoutes.map(r => `- ${r}`).join("\n")}`,
-            "docs/TASKS.md": `# Tasks & Roadmap\n\n## Roadmap\n${blueprint.roadmap.map(r => `- [ ] ${r}`).join("\n")}\n\n## Features to Implement\n${blueprint.features.map(f => `- [ ] ${f}`).join("\n")}`,
-            "app/globals.css": globalsCssContent,
-            "app/layout.tsx": appLayoutContent,
-            "app/page.tsx": appPageContent,
-            "app/dashboard/page.tsx": dashboardPageContent,
-            "app/projects/page.tsx": projectsPageContent,
-            "app/settings/page.tsx": settingsPageContent,
-            "app/api/health/route.ts": healthRouteContent,
-            "components/ui/button.tsx": buttonComponentContent,
-            "components/dashboard/stat-card.tsx": statCardContent,
-            "lib/types.ts": typesContent,
-            "lib/mock-data.ts": mockDataContent
-        }
+        files
     };
 }
