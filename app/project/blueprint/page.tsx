@@ -66,6 +66,36 @@ function BlueprintContent() {
         }
     };
 
+    const handleExport = () => {
+        const starterPack = {
+            README: `# Project Overview\n\n${idea || "No idea provided"}\n\n## Target Users\n${targetUsers || "Not provided"}\n\n## Core Feature\n${coreFeature || "Not provided"}\n\n## Suggested Tech Stack\n${blueprint.techStack.map(t => `- ${t}`).join("\n")}`,
+            PROJECT_SPEC: `# Project Specification\n\n**App Idea:**\n${idea || "Not provided"}\n\n**Platform:**\n${platform ? displayMap[platform] || platform : "Not provided"}\n\n**Business Model:**\n${businessModel ? displayMap[businessModel] || businessModel : "Not provided"}\n\n**Core Feature:**\n${coreFeature || "Not provided"}\n\n**Features Summary:**\n${blueprint.features.map(f => `- ${f}`).join("\n")}`,
+            DATABASE_SCHEMA: `# Database Schema\n\n${blueprint.databaseTables.map(t => `- ${t}`).join("\n")}`,
+            API_ROUTES: `# API Routes\n\n${blueprint.apiRoutes.map(r => `- ${r}`).join("\n")}`,
+            TASKS: `# Tasks & Roadmap\n\n## Roadmap\n${blueprint.roadmap.map(r => `- [ ] ${r}`).join("\n")}\n\n## Features to Implement\n${blueprint.features.map(f => `- [ ] ${f}`).join("\n")}`
+        };
+
+        const exportData = {
+            idea: idea || "",
+            platform: platform || "",
+            businessModel: businessModel || "",
+            targetUsers: targetUsers || "",
+            coreFeature: coreFeature || "",
+            generatedBlueprint: blueprint,
+            starterPack
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "appforge-starter-pack.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     return (
         <>
             {/* Header section */}
@@ -89,6 +119,12 @@ function BlueprintContent() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3">
+                        <button
+                            onClick={handleExport}
+                            className="hidden rounded-full bg-white/10 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/20 active:scale-95 sm:block"
+                        >
+                            Export Starter Pack
+                        </button>
                         <button
                             onClick={handleRegenerate}
                             className="hidden rounded-full border border-white/20 bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-95 sm:block"
@@ -237,6 +273,12 @@ function BlueprintContent() {
 
             {/* Mobile Save Button */}
             <div className="mt-8 flex flex-col gap-3 sm:hidden">
+                <button
+                    onClick={handleExport}
+                    className="w-full rounded-full bg-white/10 px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-white/20 active:scale-95"
+                >
+                    Export Starter Pack
+                </button>
                 <button
                     onClick={handleRegenerate}
                     className="w-full rounded-full border border-white/20 bg-transparent px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-95"
