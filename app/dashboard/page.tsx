@@ -1,6 +1,70 @@
+"use client";
+
 import Link from "next/link";
+import { useEffect, useState } from "react";
+import { Blueprint } from "@/lib/ai/generateBlueprint";
+
+type SavedProject = {
+    id: string;
+    createdAt: string;
+    idea: string;
+    platform: string;
+    businessModel: string;
+    targetUsers: string;
+    coreFeature: string;
+    generatedBlueprint: Blueprint;
+};
 
 export default function Dashboard() {
+    const [projects, setProjects] = useState<SavedProject[]>([]);
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+        try {
+            const stored = localStorage.getItem("appforge_blueprints");
+            if (stored) {
+                setProjects(JSON.parse(stored));
+            }
+        } catch (e) {
+            console.error("Failed to load projects", e);
+        }
+    }, []);
+
+    const displayMap: Record<string, string | undefined> = {
+        web: "Web App",
+        mobile: "Mobile App",
+        desktop: "Desktop App",
+        free: "Free Tool",
+        saas: "SaaS",
+        marketplace: "Marketplace",
+        internal: "Internal Tool"
+    };
+
+    const getBlueprintUrl = (project: SavedProject) => {
+        const params = new URLSearchParams();
+        if (project.idea) params.set("idea", project.idea);
+        if (project.platform) params.set("platform", project.platform);
+        if (project.businessModel) params.set("businessModel", project.businessModel);
+        if (project.targetUsers) params.set("targetUsers", project.targetUsers);
+        if (project.coreFeature) params.set("coreFeature", project.coreFeature);
+
+        return `/project/blueprint?${params.toString()}`;
+    };
+
+    // Prevent hydration mismatch by returning null until mounted on client
+    if (!mounted) {
+        return (
+            <div className="flex min-h-screen flex-col bg-zinc-950 text-white selection:bg-blue-500/30">
+                <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
+                    <div className="mb-8 flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-center">
+                        <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
+                    </div>
+                </main>
+            </div>
+        );
+    }
+
     return (
         <div className="flex min-h-screen flex-col bg-zinc-950 text-white selection:bg-blue-500/30">
             <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
@@ -20,18 +84,56 @@ export default function Dashboard() {
 
                 {/* Projects section */}
                 <section>
-                    <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-12 text-center shadow-lg backdrop-blur-sm sm:p-20">
-                        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-zinc-400">
-                            {/* Simple folder icon using SVG */}
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
-                            </svg>
+                    {projects.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-12 text-center shadow-lg backdrop-blur-sm sm:p-20">
+                            <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/10 text-zinc-400">
+                                {/* Simple folder icon using SVG */}
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-6 w-6">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+                                </svg>
+                            </div>
+                            <h3 className="text-lg font-medium text-zinc-200">No projects yet</h3>
+                            <p className="mt-2 text-sm text-zinc-400">
+                                Get started by creating a new project.
+                            </p>
                         </div>
-                        <h3 className="text-lg font-medium text-zinc-200">No projects yet</h3>
-                        <p className="mt-2 text-sm text-zinc-400">
-                            Get started by creating a new project.
-                        </p>
-                    </div>
+                    ) : (
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                            {projects.map((project) => (
+                                <div
+                                    key={project.id}
+                                    className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur-sm transition-all hover:border-white/20"
+                                >
+                                    <div>
+                                        <div className="mb-4 flex items-center justify-between text-xs text-zinc-500">
+                                            <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                                            <span className="rounded-full bg-white/10 px-2 py-1 text-zinc-300">
+                                                {displayMap[project.platform] || project.platform}
+                                            </span>
+                                        </div>
+
+                                        <h3 className="mb-2 text-lg font-semibold text-zinc-200 line-clamp-2">
+                                            {project.idea || "Untitled Project"}
+                                        </h3>
+
+                                        <div className="mb-6 flex items-center gap-2 text-sm text-zinc-400">
+                                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+                                                <path fillRule="evenodd" d="M4 4a2 2 0 012-2h8a2 2 0 012 2v12a1 1 0 110 2h-3a1 1 0 01-1-1v-2a1 1 0 00-1-1H9a1 1 0 00-1 1v2a1 1 0 01-1 1H4a1 1 0 110-2V4zm3 1h2v2H7V5zm2 4H7v2h2V9zm2-4h2v2h-2V5zm2 4h-2v2h2V9z" clipRule="evenodd" />
+                                            </svg>
+                                            {displayMap[project.businessModel] || project.businessModel}
+                                        </div>
+                                    </div>
+
+                                    <Link
+                                        href={getBlueprintUrl(project)}
+                                        className="flex w-full items-center justify-center rounded-full bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+                                    >
+                                        View Blueprint
+                                    </Link>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </section>
 
             </main>
