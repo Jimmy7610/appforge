@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Blueprint } from "@/lib/ai/generateBlueprint";
 
 type SavedProject = {
@@ -18,6 +18,7 @@ type SavedProject = {
 export default function Dashboard() {
     const [projects, setProjects] = useState<SavedProject[]>([]);
     const [mounted, setMounted] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -65,6 +66,62 @@ export default function Dashboard() {
         }
     };
 
+    const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const content = event.target?.result as string;
+                const json = JSON.parse(content);
+
+                if (!json || typeof json !== "object") {
+                    throw new Error("Invalid structure");
+                }
+
+                const hasBlueprint = json.generatedBlueprint && typeof json.generatedBlueprint === 'object';
+
+                const newProject: SavedProject = {
+                    id: crypto.randomUUID(),
+                    createdAt: new Date().toISOString(),
+                    idea: json.idea || json.projectName || "Imported Project",
+                    platform: json.platform || "",
+                    businessModel: json.businessModel || "",
+                    targetUsers: json.targetUsers || "",
+                    coreFeature: json.coreFeature || "",
+                    generatedBlueprint: hasBlueprint ? {
+                        features: Array.isArray(json.generatedBlueprint.features) ? json.generatedBlueprint.features : [],
+                        techStack: Array.isArray(json.generatedBlueprint.techStack) ? json.generatedBlueprint.techStack : [],
+                        databaseTables: Array.isArray(json.generatedBlueprint.databaseTables) ? json.generatedBlueprint.databaseTables : [],
+                        apiRoutes: Array.isArray(json.generatedBlueprint.apiRoutes) ? json.generatedBlueprint.apiRoutes : [],
+                        roadmap: Array.isArray(json.generatedBlueprint.roadmap) ? json.generatedBlueprint.roadmap : []
+                    } : {
+                        features: [],
+                        techStack: [],
+                        databaseTables: [],
+                        apiRoutes: [],
+                        roadmap: []
+                    }
+                };
+
+                const updatedProjects = [...projects, newProject];
+                setProjects(updatedProjects);
+                localStorage.setItem("appforge_blueprints", JSON.stringify(updatedProjects));
+
+            } catch (error) {
+                console.error("Failed to import bundle", error);
+                window.alert("Invalid AppForge project bundle.");
+            }
+
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        };
+
+        reader.readAsText(file);
+    };
+
     // Prevent hydration mismatch by returning null until mounted on client
     if (!mounted) {
         return (
@@ -87,12 +144,27 @@ export default function Dashboard() {
                     <h1 className="text-3xl font-bold tracking-tight text-white">
                         Dashboard
                     </h1>
-                    <Link
-                        href="/project/new"
-                        className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 hover:shadow-white/20 active:scale-95"
-                    >
-                        Create Project
-                    </Link>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95"
+                        >
+                            Import Project Bundle
+                        </button>
+                        <input
+                            type="file"
+                            accept=".json"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleImport}
+                        />
+                        <Link
+                            href="/project/new"
+                            className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 hover:shadow-white/20 active:scale-95"
+                        >
+                            Create Project
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Projects section */}
