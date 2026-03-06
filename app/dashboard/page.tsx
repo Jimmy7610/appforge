@@ -143,6 +143,14 @@ export default function Dashboard() {
         return 0;
     });
 
+    const totalProjects = projects.length;
+    const webAppsCount = projects.filter(p => p.platform === "web").length;
+    const saasCount = projects.filter(p => p.businessModel === "saas").length;
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentProjectsCount = projects.filter(p => new Date(p.createdAt) >= sevenDaysAgo).length;
+
     // Prevent hydration mismatch by returning null until mounted on client
     if (!mounted) {
         return (
@@ -185,6 +193,27 @@ export default function Dashboard() {
                         >
                             Create Project
                         </Link>
+                    </div>
+                </div>
+
+                {/* Summary Stats */}
+                <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm">
+                        <h3 className="text-sm font-medium text-zinc-400">Total Projects</h3>
+                        <p className="mt-2 text-3xl font-bold text-white">{totalProjects}</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm">
+                        <h3 className="text-sm font-medium text-zinc-400">Web Apps</h3>
+                        <p className="mt-2 text-3xl font-bold text-white">{webAppsCount}</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm">
+                        <h3 className="text-sm font-medium text-zinc-400">SaaS Projects</h3>
+                        <p className="mt-2 text-3xl font-bold text-white">{saasCount}</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm">
+                        <h3 className="text-sm font-medium text-zinc-400">Recently Created</h3>
+                        <p className="mt-2 text-3xl font-bold text-white">{recentProjectsCount}</p>
+                        <p className="mt-1 text-xs text-zinc-500">Within the last 7 days</p>
                     </div>
                 </div>
 
