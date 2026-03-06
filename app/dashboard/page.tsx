@@ -21,6 +21,8 @@ export default function Dashboard() {
     const [platformFilter, setPlatformFilter] = useState("all");
     const [businessModelFilter, setBusinessModelFilter] = useState("all");
     const [sortOption, setSortOption] = useState("newest");
+    const [selectedProject, setSelectedProject] = useState<SavedProject | null>(null);
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,6 +63,16 @@ export default function Dashboard() {
         } catch (e) {
             console.error("Failed to delete project", e);
         }
+    };
+
+    const handlePreview = (project: SavedProject) => {
+        setSelectedProject(project);
+        setIsPreviewOpen(true);
+    };
+
+    const handleClosePreview = () => {
+        setIsPreviewOpen(false);
+        setTimeout(() => setSelectedProject(null), 200);
     };
 
     const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -317,16 +329,22 @@ export default function Dashboard() {
                                         </div>
                                     </div>
 
-                                    <div className="flex gap-3">
+                                    <div className="flex gap-2 w-full mt-4">
+                                        <button
+                                            onClick={() => handlePreview(project)}
+                                            className="flex flex-1 items-center justify-center rounded-full bg-blue-500/10 px-3 py-2 text-xs font-medium text-blue-400 transition-colors hover:bg-blue-500/20"
+                                        >
+                                            Preview
+                                        </button>
                                         <Link
                                             href={getBlueprintUrl(project)}
-                                            className="flex flex-1 items-center justify-center rounded-full bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+                                            className="flex flex-1 items-center justify-center rounded-full bg-white/10 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-white/20"
                                         >
-                                            View Blueprint
+                                            Blueprint
                                         </Link>
                                         <button
                                             onClick={() => handleDelete(project.id)}
-                                            className="flex items-center justify-center rounded-full border border-red-500/10 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 active:scale-95"
+                                            className="flex items-center justify-center rounded-full border border-red-500/10 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20 active:scale-95"
                                         >
                                             Delete
                                         </button>
@@ -336,6 +354,120 @@ export default function Dashboard() {
                         </div>
                     )}
                 </section>
+
+                {/* Quick Preview Modal Overlay */}
+                {isPreviewOpen && selectedProject && (
+                    <div
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+                        onClick={handleClosePreview}
+                    >
+                        <div
+                            className="relative max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-zinc-900/90 p-6 backdrop-blur-md">
+                                <h2 className="text-xl font-bold text-white line-clamp-1 pr-8">
+                                    {selectedProject.idea || "Untitled Project"}
+                                </h2>
+                                <button
+                                    onClick={handleClosePreview}
+                                    className="rounded-full bg-white/5 p-2 text-zinc-400 hover:bg-white/10 hover:text-white transition-colors"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-5 w-5">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="p-6 space-y-8">
+                                {/* Core Properties */}
+                                <div className="grid grid-cols-2 gap-4 rounded-xl bg-white/5 p-4 border border-white/5">
+                                    <div>
+                                        <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Platform</span>
+                                        <span className="text-zinc-200 font-medium font-sans">{displayMap[selectedProject.platform] || selectedProject.platform || "Not specified"}</span>
+                                    </div>
+                                    <div>
+                                        <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-1">Business Model</span>
+                                        <span className="text-zinc-200 font-medium font-sans">{displayMap[selectedProject.businessModel] || selectedProject.businessModel || "Not specified"}</span>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4">
+                                    <div>
+                                        <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Target Users</span>
+                                        <div className="rounded-xl border border-white/5 bg-black/20 p-4 text-sm text-zinc-300 leading-relaxed font-sans">
+                                            {selectedProject.targetUsers || "Not specified"}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Core Feature</span>
+                                        <div className="rounded-xl border border-white/5 bg-black/20 p-4 text-sm text-zinc-300 leading-relaxed font-sans">
+                                            {selectedProject.coreFeature || "Not specified"}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+
+                                {/* Architecture Overview */}
+                                <div>
+                                    <h3 className="mb-4 text-lg font-semibold tracking-tight text-white flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5 text-blue-400">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M14.25 9.75L16.5 12l-2.25 2.25m-4.5 0L7.5 12l2.25-2.25M6 20.25h12A2.25 2.25 0 0020.25 18V6A2.25 2.25 0 0018 3.75H6A2.25 2.25 0 003.75 6v12A2.25 2.25 0 006 20.25z" />
+                                        </svg>
+                                        Architecture Preview
+                                    </h3>
+
+                                    <div className="space-y-6">
+                                        <div>
+                                            <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Features</span>
+                                            <ul className="list-inside list-disc space-y-1 text-sm text-zinc-300">
+                                                {selectedProject.generatedBlueprint?.features?.map((f: string, i: number) => (
+                                                    <li key={i} className="line-clamp-2">{f}</li>
+                                                ))}
+                                            </ul>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                            <div>
+                                                <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Tech Stack</span>
+                                                <ul className="list-inside list-disc space-y-1 text-sm text-zinc-300">
+                                                    {selectedProject.generatedBlueprint?.techStack?.map((t: string, i: number) => (
+                                                        <li key={i}>{t}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                            <div>
+                                                <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">Database Tables</span>
+                                                <ul className="list-inside list-disc space-y-1 text-sm text-zinc-400 font-mono">
+                                                    {selectedProject.generatedBlueprint?.databaseTables?.map((t: string, i: number) => (
+                                                        <li key={i}>{t}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="sticky bottom-0 z-10 flex justify-end gap-3 border-t border-white/10 bg-zinc-900/90 p-6 backdrop-blur-md">
+                                <button
+                                    onClick={handleClosePreview}
+                                    className="rounded-full border border-white/20 bg-transparent px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/5 active:scale-95"
+                                >
+                                    Close
+                                </button>
+                                <Link
+                                    href={getBlueprintUrl(selectedProject)}
+                                    className="rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-900 shadow-lg shadow-white/10 transition-all hover:bg-zinc-200 active:scale-95"
+                                >
+                                    Open Full Blueprint
+                                </Link>
+                            </div>
+                        </div>
+                    </div>
+                )}
 
             </main>
         </div>
