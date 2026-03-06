@@ -17,6 +17,9 @@ type SavedProject = {
 
 export default function Dashboard() {
     const [projects, setProjects] = useState<SavedProject[]>([]);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [platformFilter, setPlatformFilter] = useState("all");
+    const [businessModelFilter, setBusinessModelFilter] = useState("all");
     const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -115,6 +118,13 @@ export default function Dashboard() {
         reader.readAsText(file);
     };
 
+    const filteredProjects = projects.filter((project) => {
+        const matchesSearch = project.idea?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
+        const matchesPlatform = platformFilter === "all" || project.platform === platformFilter;
+        const matchesBusinessModel = businessModelFilter === "all" || project.businessModel === businessModelFilter;
+        return matchesSearch && matchesPlatform && matchesBusinessModel;
+    });
+
     // Prevent hydration mismatch by returning null until mounted on client
     if (!mounted) {
         return (
@@ -160,6 +170,40 @@ export default function Dashboard() {
                     </div>
                 </div>
 
+                {/* Search & Filters */}
+                {projects.length > 0 && (
+                    <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+                        <input
+                            type="text"
+                            placeholder="Search projects..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="flex-1 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30"
+                        />
+                        <select
+                            value={platformFilter}
+                            onChange={(e) => setPlatformFilter(e.target.value)}
+                            className="w-full sm:w-48 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
+                        >
+                            <option value="all">All Platforms</option>
+                            <option value="web">Web App</option>
+                            <option value="mobile">Mobile App</option>
+                            <option value="desktop">Desktop App</option>
+                        </select>
+                        <select
+                            value={businessModelFilter}
+                            onChange={(e) => setBusinessModelFilter(e.target.value)}
+                            className="w-full sm:w-48 rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
+                        >
+                            <option value="all">All Business Models</option>
+                            <option value="free">Free Tool</option>
+                            <option value="saas">SaaS</option>
+                            <option value="marketplace">Marketplace</option>
+                            <option value="internal">Internal Tool</option>
+                        </select>
+                    </div>
+                )}
+
                 {/* Projects section */}
                 <section>
                     {projects.length === 0 ? (
@@ -175,9 +219,16 @@ export default function Dashboard() {
                                 Get started by creating a new project.
                             </p>
                         </div>
+                    ) : filteredProjects.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center rounded-2xl border border-white/10 bg-white/5 p-12 text-center shadow-lg backdrop-blur-sm sm:p-20">
+                            <h3 className="text-lg font-medium text-zinc-200">No matching projects found</h3>
+                            <p className="mt-2 text-sm text-zinc-400">
+                                Try adjusting your search or filters.
+                            </p>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                            {projects.map((project) => (
+                            {filteredProjects.map((project) => (
                                 <div
                                     key={project.id}
                                     className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur-sm transition-all hover:border-white/20"
