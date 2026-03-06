@@ -48,14 +48,16 @@ export default function Home() {
   );
 }`;
 
-    const dashboardPageContent = `export default function Dashboard() {
+    const dashboardPageContent = `import { StatCard } from "@/components/dashboard/stat-card";
+
+export default function Dashboard() {
   return (
     <div className="flex min-h-screen bg-gray-900 text-white">
       <aside className="w-64 border-r border-white/10 p-6 hidden md:block bg-gray-900/50">
         <h2 className="text-xl font-bold mb-8 text-white">${idea || "App"}</h2>
         <nav className="space-y-4">
           <a href="#" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Overview</a>
-          <a href="#" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Settings</a>
+          <a href="/settings" className="block text-sm font-medium text-gray-400 hover:text-white transition-colors">Settings</a>
         </nav>
       </aside>
       <main className="flex-1 p-8 lg:p-12">
@@ -64,14 +66,8 @@ export default function Home() {
         </header>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-            <div className="bg-white/5 p-6 rounded-2xl border border-white/10 shadow-sm">
-                <h3 className="text-sm font-medium text-gray-400 mb-2">Total Users</h3>
-                <p className="text-3xl font-bold text-white">0</p>
-            </div>
-            <div className="bg-white/5 p-6 rounded-2xl border border-white/10 shadow-sm">
-                <h3 className="text-sm font-medium text-gray-400 mb-2">Platform</h3>
-                <p className="text-xl font-semibold text-white mt-1">${platform ? displayMap[platform] || platform : "Web App"}</p>
-            </div>
+            <StatCard label="Total Users" value="0" />
+            <StatCard label="Platform" value="${platform ? displayMap[platform] || platform : "Web App"}" helperText="Current target" />
         </div>
 
         <section>
@@ -237,6 +233,91 @@ export const projects: Project[] = [
   },
 ];`;
 
+    const settingsPageContent = `export default function SettingsPage() {
+  return (
+    <div className="min-h-screen bg-gray-950 text-white">
+      <main className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold tracking-tight text-white">Settings</h1>
+          <p className="mt-2 text-sm text-gray-400">
+            Manage your ${idea || "application"} preferences and configuration.
+          </p>
+        </div>
+
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white mb-1">General</h2>
+            <p className="text-sm text-gray-400 mb-4">Basic application settings.</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="block text-sm font-medium text-gray-200">Project Name</span>
+                  <span className="text-xs text-gray-500">The display name for your project</span>
+                </div>
+                <input
+                  type="text"
+                  defaultValue="${idea || "My Project"}"
+                  className="rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-sm text-gray-200 outline-none focus:border-white/30 w-48"
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="block text-sm font-medium text-gray-200">Dark Mode</span>
+                  <span className="text-xs text-gray-500">Toggle the interface theme</span>
+                </div>
+                <button className="rounded-full bg-blue-600 px-4 py-1.5 text-xs font-medium text-white">Enabled</button>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/5 p-6">
+            <h2 className="text-lg font-semibold text-white mb-1">Notifications</h2>
+            <p className="text-sm text-gray-400 mb-4">Configure how you receive updates.</p>
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="block text-sm font-medium text-gray-200">Email Alerts</span>
+                  <span className="text-xs text-gray-500">Get notified about important events</span>
+                </div>
+                <button className="rounded-full border border-white/20 bg-white/5 px-4 py-1.5 text-xs font-medium text-gray-400">Disabled</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}`;
+
+    const healthRouteContent = `import { NextResponse } from "next/server";
+
+export async function GET() {
+  return NextResponse.json({
+    status: "ok",
+    project: "${idea || "AppForge Project"}",
+    platform: "${platform ? displayMap[platform] || platform : "Web App"}",
+    timestamp: new Date().toISOString(),
+  });
+}`;
+
+    const statCardContent = `interface StatCardProps {
+  label: string;
+  value: string | number;
+  helperText?: string;
+}
+
+export function StatCard({ label, value, helperText }: StatCardProps) {
+  return (
+    <div className="bg-white/5 p-6 rounded-2xl border border-white/10 shadow-sm">
+      <h3 className="text-sm font-medium text-gray-400 mb-2">{label}</h3>
+      <p className="text-3xl font-bold text-white">{value}</p>
+      {helperText && (
+        <p className="mt-1 text-xs text-gray-500">{helperText}</p>
+      )}
+    </div>
+  );
+}`;
+
     return {
         projectName: idea || "appforge-project",
         idea: idea || "",
@@ -256,7 +337,10 @@ export const projects: Project[] = [
             "app/page.tsx": appPageContent,
             "app/dashboard/page.tsx": dashboardPageContent,
             "app/projects/page.tsx": projectsPageContent,
+            "app/settings/page.tsx": settingsPageContent,
+            "app/api/health/route.ts": healthRouteContent,
             "components/ui/button.tsx": buttonComponentContent,
+            "components/dashboard/stat-card.tsx": statCardContent,
             "lib/types.ts": typesContent,
             "lib/mock-data.ts": mockDataContent
         }

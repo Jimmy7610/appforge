@@ -222,9 +222,18 @@ function BlueprintContent() {
         const projectsFolder = app?.folder("projects");
         projectsFolder?.file("page.tsx", bundleData.files["app/projects/page.tsx"]);
 
+        const settingsFolder = app?.folder("settings");
+        settingsFolder?.file("page.tsx", bundleData.files["app/settings/page.tsx"]);
+
+        const api = app?.folder("api");
+        const health = api?.folder("health");
+        health?.file("route.ts", bundleData.files["app/api/health/route.ts"]);
+
         const components = zip.folder("components");
         const ui = components?.folder("ui");
         ui?.file("button.tsx", bundleData.files["components/ui/button.tsx"]);
+        const dashboardComponents = components?.folder("dashboard");
+        dashboardComponents?.file("stat-card.tsx", bundleData.files["components/dashboard/stat-card.tsx"]);
 
         const lib = zip.folder("lib");
         lib?.file("types.ts", bundleData.files["lib/types.ts"]);
