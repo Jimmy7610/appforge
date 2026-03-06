@@ -52,6 +52,19 @@ export default function Dashboard() {
         return `/project/blueprint?${params.toString()}`;
     };
 
+    const handleDelete = (id: string) => {
+        const confirmDelete = window.confirm("Are you sure you want to delete this blueprint?");
+        if (!confirmDelete) return;
+
+        try {
+            const updatedProjects = projects.filter((project) => project.id !== id);
+            setProjects(updatedProjects);
+            localStorage.setItem("appforge_blueprints", JSON.stringify(updatedProjects));
+        } catch (e) {
+            console.error("Failed to delete project", e);
+        }
+    };
+
     // Prevent hydration mismatch by returning null until mounted on client
     if (!mounted) {
         return (
@@ -124,12 +137,20 @@ export default function Dashboard() {
                                         </div>
                                     </div>
 
-                                    <Link
-                                        href={getBlueprintUrl(project)}
-                                        className="flex w-full items-center justify-center rounded-full bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
-                                    >
-                                        View Blueprint
-                                    </Link>
+                                    <div className="flex gap-3">
+                                        <Link
+                                            href={getBlueprintUrl(project)}
+                                            className="flex flex-1 items-center justify-center rounded-full bg-white/10 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+                                        >
+                                            View Blueprint
+                                        </Link>
+                                        <button
+                                            onClick={() => handleDelete(project.id)}
+                                            className="flex items-center justify-center rounded-full border border-red-500/10 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 transition-colors hover:bg-red-500/20 active:scale-95"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
