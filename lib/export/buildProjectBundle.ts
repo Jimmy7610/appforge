@@ -67,24 +67,32 @@ export default function Home() {
     if (hasTeam) navLinks.push({ href: "/team", label: "Team" });
 
     const navLinksMarkup = navLinks
-        .map(l => `          <a href="${l.href}" className="block text-sm text-gray-400 hover:text-white transition-colors">${l.label}</a>`)
+        .map(l => `          <Link href="${l.href}" className="block text-sm text-gray-400 hover:text-white transition-colors">${l.label}</Link>`)
         .join("\n");
 
-    const dashboardPageContent = `import { StatCard } from "@/components/dashboard/stat-card";
+    const dashboardPageContent = `import Link from "next/link";
+import { StatCard } from "@/components/dashboard/stat-card";
+import { projects } from "@/lib/mock-data";
+import type { Project } from "@/lib/types";
 
 export default function DashboardPage() {
+  const recentProjects = projects.slice(0, 2);
+
   return (
     <div className="flex min-h-screen bg-gray-950 text-white">
       <aside className="hidden w-60 shrink-0 border-r border-white/10 p-6 md:block">
         <h2 className="text-lg font-bold mb-6">${idea || "App"}</h2>
         <nav className="space-y-3">
-          <a href="/dashboard" className="block text-sm font-medium text-white">Dashboard</a>
+          <Link href="/dashboard" className="block text-sm font-medium text-white">Dashboard</Link>
 ${navLinksMarkup}
         </nav>
       </aside>
 
       <main className="flex-1 p-8 lg:p-12">
-        <h1 className="text-2xl font-bold tracking-tight mb-8">Dashboard</h1>
+        <div className="mb-8">
+          <h1 className="text-2xl font-bold tracking-tight">${idea || "Dashboard"}</h1>
+          <p className="mt-1 text-sm text-gray-400">${coreFeature ? coreFeature + " —" : "Your"} ${platformLabel} for ${targetUsers || "your users"}.</p>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-10">
           <StatCard label="Total Users" value={0} />
@@ -92,10 +100,31 @@ ${navLinksMarkup}
         </div>
 
         <section>
-          <h2 className="text-base font-semibold mb-4">Recent Activity</h2>
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center">
-            <p className="text-sm text-gray-500">Nothing here yet. Start building your ${modelLabel} to see activity.</p>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-base font-semibold">Recent Projects</h2>
+            <Link href="/projects" className="text-xs text-gray-400 hover:text-white transition-colors">View all</Link>
           </div>
+
+          {recentProjects.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {recentProjects.map((project: Project) => (
+                <div
+                  key={project.id}
+                  className="rounded-2xl border border-white/10 bg-white/5 p-5 transition hover:border-white/20"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold">{project.title}</h3>
+                    <span className="text-xs text-gray-500 rounded-full bg-white/10 px-2 py-0.5">{project.platform}</span>
+                  </div>
+                  <p className="text-xs text-gray-400 line-clamp-2">{project.coreFeature}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-white/10 bg-white/5 p-10 text-center">
+              <p className="text-sm text-gray-500">No projects yet. Create one to get started.</p>
+            </div>
+          )}
         </section>
       </main>
     </div>
