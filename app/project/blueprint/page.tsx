@@ -20,6 +20,7 @@ import { buildFullProject } from "@/lib/export/buildFullProject";
 import { MermaidDiagram } from "@/components/blueprint/mermaid-diagram";
 import { ArchitectureCritique } from "@/components/blueprint/architecture-critique";
 import { ArchitectureSuggestions } from "@/components/blueprint/architecture-suggestions";
+import { RefinePresets } from "@/components/blueprint/refine-presets";
 import { Project, BlueprintVersion, BlueprintCritique, ArchitectureSuggestionsResult } from "@/lib/ai/types";
 import { suggestArchitectureImprovements } from "@/lib/ai/suggestArchitectureImprovements";
 import {
@@ -996,6 +997,13 @@ function BlueprintContent() {
                             </div>
                         </div>
 
+                        {/* Refine Presets Integration */}
+                        <RefinePresets
+                            onSelectPreset={(instruction) => setInstructions(instruction)}
+                            currentInstruction={instructions}
+                            isApplying={isImproving || isGenerating || isExplaining || isGeneratingDiagram || isCritiquing || isSuggesting}
+                        />
+
                         {/* Row 2: Action Buttons */}
                         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-white/5">
                             <div className="flex flex-wrap gap-3 order-2 lg:order-1">
@@ -1062,338 +1070,354 @@ function BlueprintContent() {
                         </div>
                     </div>
                 </div>
-            </div>
+            </div >
 
             {/* Architecture Suggestions UI */}
-            {suggestions && (
-                <ArchitectureSuggestions
-                    result={suggestions}
-                    onSelectSuggestion={(instruction) => {
-                        setInstructions(instruction);
-                        window.scrollTo({ top: document.body.scrollHeight / 2, behavior: "smooth" }); // scroll slightly up towards refine panel
-                    }}
-                    isApplying={isImproving}
-                />
-            )}
+            {
+                suggestions && (
+                    <ArchitectureSuggestions
+                        result={suggestions}
+                        onSelectSuggestion={(instruction) => {
+                            setInstructions(instruction);
+                            window.scrollTo({ top: document.body.scrollHeight / 2, behavior: "smooth" }); // scroll slightly up towards refine panel
+                        }}
+                        isApplying={isImproving}
+                    />
+                )
+            }
 
             {/* Diff Summary UI */}
-            {diffResult && hasAnyChanges(diffResult) && (
-                <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                    <h3 className="text-lg font-semibold tracking-tight text-white mb-2 ml-1">Changes from previous blueprint</h3>
-                    <p className="text-sm text-zinc-400 mb-6 ml-1">Here is a structural summary of the improvements.</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        {Object.entries(diffResult).map(([sectionKey, diff]) => {
-                            if (diff.added.length === 0 && diff.removed.length === 0) return null;
-                            const titleMap: Record<string, string> = {
-                                features: "Features",
-                                techStack: "Tech Stack",
-                                databaseTables: "Database Tables",
-                                apiRoutes: "API Routes",
-                                roadmap: "Roadmap"
-                            };
-                            return (
-                                <div key={sectionKey} className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
-                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">{titleMap[sectionKey] || sectionKey}</h4>
-                                    <ul className="space-y-2 text-sm">
-                                        {diff.added.map((item: string, i: number) => (
-                                            <li key={`add-${i}`} className="flex items-start text-emerald-400">
-                                                <span className="mr-2 font-mono mt-0.5">+</span>
-                                                <span className="leading-relaxed">{item}</span>
-                                            </li>
-                                        ))}
-                                        {diff.removed.map((item: string, i: number) => (
-                                            <li key={`rm-${i}`} className="flex items-start text-rose-400 opacity-80">
-                                                <span className="mr-2 font-mono mt-0.5">-</span>
-                                                <span className="leading-relaxed line-through">{item}</span>
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            )}
-            {diffResult && !hasAnyChanges(diffResult) && (
-                <div className="mb-8 rounded-2xl border border-zinc-500/20 bg-zinc-900/50 p-6 shadow-xl backdrop-blur-sm sm:p-8 flex items-center gap-3">
-                    <div className="h-2 w-2 rounded-full bg-zinc-500"></div>
-                    <p className="text-sm text-zinc-300">No structural changes detected from this improvement pass.</p>
-                </div>
-            )}
-
-            {/* Architecture Explanation UI */}
-            {explanation && (
-                <div className="mb-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                    <h3 className="text-lg font-semibold tracking-tight text-emerald-400 mb-4 ml-1">Architecture Explanation</h3>
-                    <div className="rounded-xl bg-zinc-900/50 p-6 border border-emerald-500/10">
-                        <div className="prose prose-invert prose-emerald max-w-none prose-sm sm:prose-base leading-relaxed text-zinc-300">
-                            {explanation.explanation.split('\n').map((paragraph, i) => {
-                                // Simple line break rendering instead of a full markdown parser to keep dependencies low
-                                if (paragraph.trim().startsWith('- ')) {
-                                    return <li key={i} className="ml-4 list-disc">{paragraph.replace('- ', '')}</li>;
-                                }
-                                if (paragraph.trim().startsWith('**') && paragraph.trim().endsWith('**')) {
-                                    return <p key={i} className="font-semibold text-zinc-200 mt-4 mb-2">{paragraph.replace(/\*\*/g, '')}</p>;
-                                }
-                                if (paragraph.trim().startsWith('###')) {
-                                    return <h4 key={i} className="text-lg font-semibold text-emerald-300 mt-6 mb-3">{paragraph.replace(/###/g, '').trim()}</h4>;
-                                }
-                                return <p key={i} className="mb-4">{paragraph}</p>;
+            {
+                diffResult && hasAnyChanges(diffResult) && (
+                    <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                        <h3 className="text-lg font-semibold tracking-tight text-white mb-2 ml-1">Changes from previous blueprint</h3>
+                        <p className="text-sm text-zinc-400 mb-6 ml-1">Here is a structural summary of the improvements.</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {Object.entries(diffResult).map(([sectionKey, diff]) => {
+                                if (diff.added.length === 0 && diff.removed.length === 0) return null;
+                                const titleMap: Record<string, string> = {
+                                    features: "Features",
+                                    techStack: "Tech Stack",
+                                    databaseTables: "Database Tables",
+                                    apiRoutes: "API Routes",
+                                    roadmap: "Roadmap"
+                                };
+                                return (
+                                    <div key={sectionKey} className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
+                                        <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">{titleMap[sectionKey] || sectionKey}</h4>
+                                        <ul className="space-y-2 text-sm">
+                                            {diff.added.map((item: string, i: number) => (
+                                                <li key={`add-${i}`} className="flex items-start text-emerald-400">
+                                                    <span className="mr-2 font-mono mt-0.5">+</span>
+                                                    <span className="leading-relaxed">{item}</span>
+                                                </li>
+                                            ))}
+                                            {diff.removed.map((item: string, i: number) => (
+                                                <li key={`rm-${i}`} className="flex items-start text-rose-400 opacity-80">
+                                                    <span className="mr-2 font-mono mt-0.5">-</span>
+                                                    <span className="leading-relaxed line-through">{item}</span>
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                );
                             })}
                         </div>
                     </div>
-                    {explanation.metadata && (
-                        <div className="mt-4 flex items-center justify-end">
-                            <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
-                                <span className={`h-1.5 w-1.5 rounded-full ${explanation.metadata.usedFallback || explanation.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
-                                Explained via: {explanation.metadata.sourceLabel}
-                            </span>
+                )
+            }
+            {
+                diffResult && !hasAnyChanges(diffResult) && (
+                    <div className="mb-8 rounded-2xl border border-zinc-500/20 bg-zinc-900/50 p-6 shadow-xl backdrop-blur-sm sm:p-8 flex items-center gap-3">
+                        <div className="h-2 w-2 rounded-full bg-zinc-500"></div>
+                        <p className="text-sm text-zinc-300">No structural changes detected from this improvement pass.</p>
+                    </div>
+                )
+            }
+
+            {/* Architecture Explanation UI */}
+            {
+                explanation && (
+                    <div className="mb-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                        <h3 className="text-lg font-semibold tracking-tight text-emerald-400 mb-4 ml-1">Architecture Explanation</h3>
+                        <div className="rounded-xl bg-zinc-900/50 p-6 border border-emerald-500/10">
+                            <div className="prose prose-invert prose-emerald max-w-none prose-sm sm:prose-base leading-relaxed text-zinc-300">
+                                {explanation.explanation.split('\n').map((paragraph, i) => {
+                                    // Simple line break rendering instead of a full markdown parser to keep dependencies low
+                                    if (paragraph.trim().startsWith('- ')) {
+                                        return <li key={i} className="ml-4 list-disc">{paragraph.replace('- ', '')}</li>;
+                                    }
+                                    if (paragraph.trim().startsWith('**') && paragraph.trim().endsWith('**')) {
+                                        return <p key={i} className="font-semibold text-zinc-200 mt-4 mb-2">{paragraph.replace(/\*\*/g, '')}</p>;
+                                    }
+                                    if (paragraph.trim().startsWith('###')) {
+                                        return <h4 key={i} className="text-lg font-semibold text-emerald-300 mt-6 mb-3">{paragraph.replace(/###/g, '').trim()}</h4>;
+                                    }
+                                    return <p key={i} className="mb-4">{paragraph}</p>;
+                                })}
+                            </div>
                         </div>
-                    )}
-                </div>
-            )}
+                        {explanation.metadata && (
+                            <div className="mt-4 flex items-center justify-end">
+                                <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
+                                    <span className={`h-1.5 w-1.5 rounded-full ${explanation.metadata.usedFallback || explanation.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                                    Explained via: {explanation.metadata.sourceLabel}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )
+            }
 
             {/* Architecture Diagram UI */}
-            {diagram && (
-                <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                    <div className="mb-4 flex items-center justify-between ml-1">
-                        <h3 className="text-lg font-semibold tracking-tight text-blue-400">Architecture Diagram (Mermaid)</h3>
-                        <div className="flex items-center gap-2">
-                            <button
-                                onClick={handleDownloadSVG}
-                                disabled={!renderedSvg}
-                                className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Download SVG
-                            </button>
-                            <button
-                                onClick={handleDownloadPNG}
-                                disabled={!renderedSvg}
-                                className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                Download PNG
-                            </button>
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(diagram.diagram);
-                                    window.alert("Mermaid code copied to clipboard!");
-                                }}
-                                className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
-                            >
-                                Copy Mermaid
-                            </button>
+            {
+                diagram && (
+                    <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                        <div className="mb-4 flex items-center justify-between ml-1">
+                            <h3 className="text-lg font-semibold tracking-tight text-blue-400">Architecture Diagram (Mermaid)</h3>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleDownloadSVG}
+                                    disabled={!renderedSvg}
+                                    className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Download SVG
+                                </button>
+                                <button
+                                    onClick={handleDownloadPNG}
+                                    disabled={!renderedSvg}
+                                    className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    Download PNG
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(diagram.diagram);
+                                        window.alert("Mermaid code copied to clipboard!");
+                                    }}
+                                    className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
+                                >
+                                    Copy Mermaid
+                                </button>
+                            </div>
                         </div>
-                    </div>
 
-                    {/* Live Diagram Preview */}
-                    <div className="mb-6">
-                        <MermaidDiagram
-                            source={diagram.diagram}
-                            onRender={(svg) => setRenderedSvg(svg)}
-                        />
-                    </div>
-
-                    <div className="mb-3 flex items-center justify-between ml-1">
-                        <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Mermaid Source</h4>
-                        <span className="text-[10px] text-zinc-500 italic">Rendered via Mermaid.js</span>
-                    </div>
-
-                    <div className="rounded-xl bg-zinc-900/80 p-6 border border-blue-500/10 font-mono text-sm overflow-x-auto whitespace-pre leading-relaxed text-blue-100/90">
-                        {diagram.diagram}
-                    </div>
-
-
-                    <p className="mt-4 text-xs text-zinc-500 italic ml-1">
-                        Note: Exports are generated from the live rendered Mermaid preview above. You can also copy the source for external editors.
-                    </p>
-
-                    {/* TODO: transparent PNG export depth */}
-                    {/* TODO: higher resolution PNG export (custom scale) */}
-                    {/* TODO: PDF export integration */}
-                    {/* TODO: theme selection for exports */}
-                    {/* TODO: batch export (All formats) */}
-
-                    {diagram.metadata && (
-                        <div className="mt-4 flex items-center justify-end">
-                            <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
-                                <span className={`h-1.5 w-1.5 rounded-full ${diagram.metadata.usedFallback || diagram.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
-                                Generated via: {diagram.metadata.sourceLabel}
-                            </span>
+                        {/* Live Diagram Preview */}
+                        <div className="mb-6">
+                            <MermaidDiagram
+                                source={diagram.diagram}
+                                onRender={(svg) => setRenderedSvg(svg)}
+                            />
                         </div>
-                    )}
-                </div>
-            )}
+
+                        <div className="mb-3 flex items-center justify-between ml-1">
+                            <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Mermaid Source</h4>
+                            <span className="text-[10px] text-zinc-500 italic">Rendered via Mermaid.js</span>
+                        </div>
+
+                        <div className="rounded-xl bg-zinc-900/80 p-6 border border-blue-500/10 font-mono text-sm overflow-x-auto whitespace-pre leading-relaxed text-blue-100/90">
+                            {diagram.diagram}
+                        </div>
+
+
+                        <p className="mt-4 text-xs text-zinc-500 italic ml-1">
+                            Note: Exports are generated from the live rendered Mermaid preview above. You can also copy the source for external editors.
+                        </p>
+
+                        {/* TODO: transparent PNG export depth */}
+                        {/* TODO: higher resolution PNG export (custom scale) */}
+                        {/* TODO: PDF export integration */}
+                        {/* TODO: theme selection for exports */}
+                        {/* TODO: batch export (All formats) */}
+
+                        {diagram.metadata && (
+                            <div className="mt-4 flex items-center justify-end">
+                                <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
+                                    <span className={`h-1.5 w-1.5 rounded-full ${diagram.metadata.usedFallback || diagram.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                                    Generated via: {diagram.metadata.sourceLabel}
+                                </span>
+                            </div>
+                        )}
+                    </div>
+                )
+            }
 
             {/* Architecture Critique UI */}
-            {critique && (
-                <div className="mb-8">
-                    <ArchitectureCritique critique={critique} />
-                </div>
-            )}
+            {
+                critique && (
+                    <div className="mb-8">
+                        <ArchitectureCritique critique={critique} />
+                    </div>
+                )
+            }
 
             {/* Blueprint Versions UI */}
-            {project && project.versions && project.versions.length > 0 && (
-                <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                    <div className="mb-6">
-                        <h3 className="text-lg font-semibold tracking-tight text-white">Blueprint Versions</h3>
-                        <p className="text-sm text-zinc-500">Track and restore historical versions of this blueprint.</p>
-                    </div>
+            {
+                project && project.versions && project.versions.length > 0 && (
+                    <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                        <div className="mb-6">
+                            <h3 className="text-lg font-semibold tracking-tight text-white">Blueprint Versions</h3>
+                            <p className="text-sm text-zinc-500">Track and restore historical versions of this blueprint.</p>
+                        </div>
 
-                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                        {[...project.versions].reverse().map((v) => (
-                            <div
-                                key={v.id}
-                                className={`relative flex flex-col rounded-xl border p-4 transition-all ${v.id === activeVersionId
-                                    ? "border-blue-500/50 bg-blue-500/5 ring-1 ring-blue-500/20"
-                                    : "border-white/10 bg-zinc-900/50 hover:border-white/20"
-                                    }`}
-                            >
-                                <div className="mb-2 flex items-center justify-between">
-                                    <span className={`text-sm font-bold ${v.id === activeVersionId ? "text-blue-400" : "text-zinc-400"}`}>
-                                        {v.label}
-                                    </span>
-                                    {v.id === activeVersionId && (
-                                        <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-400 uppercase tracking-tighter">
-                                            Active
+                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                            {[...project.versions].reverse().map((v) => (
+                                <div
+                                    key={v.id}
+                                    className={`relative flex flex-col rounded-xl border p-4 transition-all ${v.id === activeVersionId
+                                        ? "border-blue-500/50 bg-blue-500/5 ring-1 ring-blue-500/20"
+                                        : "border-white/10 bg-zinc-900/50 hover:border-white/20"
+                                        }`}
+                                >
+                                    <div className="mb-2 flex items-center justify-between">
+                                        <span className={`text-sm font-bold ${v.id === activeVersionId ? "text-blue-400" : "text-zinc-400"}`}>
+                                            {v.label}
                                         </span>
+                                        {v.id === activeVersionId && (
+                                            <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-400 uppercase tracking-tighter">
+                                                Active
+                                            </span>
+                                        )}
+                                    </div>
+                                    <span className="mb-4 text-[10px] text-zinc-600 font-medium">
+                                        {new Date(v.createdAt).toLocaleString()}
+                                    </span>
+
+                                    {v.id !== activeVersionId && (
+                                        <button
+                                            onClick={() => handleRestore(v.id)}
+                                            className="mt-auto w-full rounded-lg bg-white/5 py-2 text-xs font-semibold text-zinc-300 border border-white/10 hover:bg-white/10 hover:text-white transition-all active:scale-95"
+                                        >
+                                            Restore Version
+                                        </button>
+                                    )}
+                                    {v.id === activeVersionId && (
+                                        <div className="mt-auto py-2 text-center text-[10px] font-medium text-zinc-500 italic">
+                                            Currently viewing
+                                        </div>
                                     )}
                                 </div>
-                                <span className="mb-4 text-[10px] text-zinc-600 font-medium">
-                                    {new Date(v.createdAt).toLocaleString()}
-                                </span>
-
-                                {v.id !== activeVersionId && (
-                                    <button
-                                        onClick={() => handleRestore(v.id)}
-                                        className="mt-auto w-full rounded-lg bg-white/5 py-2 text-xs font-semibold text-zinc-300 border border-white/10 hover:bg-white/10 hover:text-white transition-all active:scale-95"
-                                    >
-                                        Restore Version
-                                    </button>
-                                )}
-                                {v.id === activeVersionId && (
-                                    <div className="mt-auto py-2 text-center text-[10px] font-medium text-zinc-500 italic">
-                                        Currently viewing
-                                    </div>
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* TODO: compare any two versions */}
-                    {/* TODO: version notes/comments */}
-                    {/* TODO: auto-save checkpoints */}
-                    {/* TODO: branching and forks */}
-                    {/* TODO: pin favorite versions */}
-                    {/* TODO: interactive timeline view */}
-                </div>
-            )}
-
-            {/* Ask the Architect (Chat) UI */}
-            {blueprint && (
-                <div className="mb-8 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                    <div className="mb-4">
-                        <h3 className="text-lg font-semibold tracking-tight text-indigo-400">Ask the Architect</h3>
-                        <p className="text-sm text-indigo-300/60">Ask follow-up questions about this blueprint architecture.</p>
-                    </div>
-
-                    {/* Chat History */}
-                    <div className="mb-6 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                        {chatMessages.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center py-10 text-center opacity-50">
-                                <div className="mb-3 rounded-full bg-indigo-500/10 p-4 text-indigo-400">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.023c.09-.457.133-.925.133-1.393A8.814 8.814 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                                    </svg>
-                                </div>
-                                <p className="text-sm font-medium">No messages yet.</p>
-                                <p className="mt-1 text-xs">How can I help refine your architecture?</p>
-                            </div>
-                        ) : (
-                            chatMessages.map((msg, i) => (
-                                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${msg.role === "user"
-                                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/10"
-                                        : "bg-zinc-900 border border-indigo-500/10 text-zinc-300"
-                                        }`}>
-                                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                        {isChatting && (
-                            <div className="flex justify-start">
-                                <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-zinc-900 border border-indigo-500/10 text-zinc-300">
-                                    <div className="flex gap-1">
-                                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500"></span>
-                                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.2s]"></span>
-                                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.4s]"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Suggestion Chips */}
-                    {!isChatting && (
-                        <div className="mb-4 flex flex-wrap gap-2">
-                            {[
-                                "Should this use Redis caching?",
-                                "How would I scale this system?",
-                                "How should authentication work?"
-                            ].map((tip, i) => (
-                                <button
-                                    key={i}
-                                    onClick={() => handleChat(tip)}
-                                    className="rounded-full bg-indigo-500/5 border border-indigo-500/20 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all font-medium"
-                                >
-                                    {tip}
-                                </button>
                             ))}
                         </div>
-                    )}
 
-                    {/* Chat Input */}
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="Ask a question..."
-                            value={chatInput}
-                            onChange={(e) => setChatInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !isChatting && handleChat()}
-                            className="w-full rounded-xl bg-zinc-900 border border-indigo-500/10 p-4 pr-12 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all"
-                        />
-                        <button
-                            onClick={() => !isChatting && handleChat()}
-                            disabled={isChatting || !chatInput.trim()}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20"
-                        >
-                            {isChatting ? (
-                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-                            ) : (
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                                </svg>
-                            )}
-                        </button>
+                        {/* TODO: compare any two versions */}
+                        {/* TODO: version notes/comments */}
+                        {/* TODO: auto-save checkpoints */}
+                        {/* TODO: branching and forks */}
+                        {/* TODO: pin favorite versions */}
+                        {/* TODO: interactive timeline view */}
                     </div>
+                )
+            }
 
-                    {lastChatResult?.metadata && (
-                        <div className="mt-4 flex items-center justify-end">
-                            <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] font-medium text-zinc-500">
-                                <span className={`h-1 w-1 rounded-full ${lastChatResult.metadata.usedFallback || lastChatResult.metadata.provider === "local" ? "bg-amber-500" : "bg-indigo-500"}`}></span>
-                                Last reply via: {lastChatResult.metadata.sourceLabel}
-                            </span>
+            {/* Ask the Architect (Chat) UI */}
+            {
+                blueprint && (
+                    <div className="mb-8 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                        <div className="mb-4">
+                            <h3 className="text-lg font-semibold tracking-tight text-indigo-400">Ask the Architect</h3>
+                            <p className="text-sm text-indigo-300/60">Ask follow-up questions about this blueprint architecture.</p>
                         </div>
-                    )}
 
-                    {/* TODO: streaming replies */}
-                    {/* TODO: multi-turn persistence */}
-                    {/* TODO: architecture critique mode */}
-                    {/* TODO: code-level follow-up generation */}
-                    {/* TODO: section-specific chat */}
-                    {/* TODO: save chat with blueprint */}
-                </div>
-            )}
+                        {/* Chat History */}
+                        <div className="mb-6 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                            {chatMessages.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-10 text-center opacity-50">
+                                    <div className="mb-3 rounded-full bg-indigo-500/10 p-4 text-indigo-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.023c.09-.457.133-.925.133-1.393A8.814 8.814 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                                        </svg>
+                                    </div>
+                                    <p className="text-sm font-medium">No messages yet.</p>
+                                    <p className="mt-1 text-xs">How can I help refine your architecture?</p>
+                                </div>
+                            ) : (
+                                chatMessages.map((msg, i) => (
+                                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                                        <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${msg.role === "user"
+                                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/10"
+                                            : "bg-zinc-900 border border-indigo-500/10 text-zinc-300"
+                                            }`}>
+                                            <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
+                            {isChatting && (
+                                <div className="flex justify-start">
+                                    <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-zinc-900 border border-indigo-500/10 text-zinc-300">
+                                        <div className="flex gap-1">
+                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500"></span>
+                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.2s]"></span>
+                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.4s]"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Suggestion Chips */}
+                        {!isChatting && (
+                            <div className="mb-4 flex flex-wrap gap-2">
+                                {[
+                                    "Should this use Redis caching?",
+                                    "How would I scale this system?",
+                                    "How should authentication work?"
+                                ].map((tip, i) => (
+                                    <button
+                                        key={i}
+                                        onClick={() => handleChat(tip)}
+                                        className="rounded-full bg-indigo-500/5 border border-indigo-500/20 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all font-medium"
+                                    >
+                                        {tip}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Chat Input */}
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="Ask a question..."
+                                value={chatInput}
+                                onChange={(e) => setChatInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && !isChatting && handleChat()}
+                                className="w-full rounded-xl bg-zinc-900 border border-indigo-500/10 p-4 pr-12 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all"
+                            />
+                            <button
+                                onClick={() => !isChatting && handleChat()}
+                                disabled={isChatting || !chatInput.trim()}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20"
+                            >
+                                {isChatting ? (
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+                                ) : (
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                                    </svg>
+                                )}
+                            </button>
+                        </div>
+
+                        {lastChatResult?.metadata && (
+                            <div className="mt-4 flex items-center justify-end">
+                                <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] font-medium text-zinc-500">
+                                    <span className={`h-1 w-1 rounded-full ${lastChatResult.metadata.usedFallback || lastChatResult.metadata.provider === "local" ? "bg-amber-500" : "bg-indigo-500"}`}></span>
+                                    Last reply via: {lastChatResult.metadata.sourceLabel}
+                                </span>
+                            </div>
+                        )}
+
+                        {/* TODO: streaming replies */}
+                        {/* TODO: multi-turn persistence */}
+                        {/* TODO: architecture critique mode */}
+                        {/* TODO: code-level follow-up generation */}
+                        {/* TODO: section-specific chat */}
+                        {/* TODO: save chat with blueprint */}
+                    </div>
+                )
+            }
 
             {/* Generated Architecture Card */}
             <div>
