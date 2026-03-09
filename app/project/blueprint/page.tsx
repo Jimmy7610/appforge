@@ -40,6 +40,7 @@ function BlueprintContent() {
     const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
     const [projectNotFound, setProjectNotFound] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+    const [importSuccess, setImportSuccess] = useState(false);
 
     // Improve UI state
     const [isImproving, setIsImproving] = useState(false);
@@ -52,6 +53,8 @@ function BlueprintContent() {
 
     useEffect(() => {
         setMounted(true);
+        const isImported = getParam("imported") === "true";
+
         if (idParam) {
             try {
                 const stored = localStorage.getItem("appforge_blueprints");
@@ -70,6 +73,31 @@ function BlueprintContent() {
                 }
             } catch (e) {
                 console.error("Failed to load project from localStorage", e);
+            }
+            setProjectNotFound(true);
+        } else if (isImported) {
+            try {
+                const stored = sessionStorage.getItem("appforge_imported_blueprint");
+                if (stored) {
+                    const parsed = JSON.parse(stored);
+                    setIdea(parsed.idea);
+                    setPlatform(parsed.inputs.platform);
+                    setBusinessModel(parsed.inputs.businessModel);
+                    setTargetUsers(parsed.inputs.targetUsers);
+                    setCoreFeature(parsed.inputs.coreFeature);
+                    setBlueprint(parsed.blueprint);
+                    if (parsed.explanation) {
+                        setExplanation({
+                            explanation: parsed.explanation,
+                            metadata: parsed.metadata || undefined
+                        });
+                    }
+                    setImportSuccess(true);
+                    setTimeout(() => setImportSuccess(false), 4000);
+                    return;
+                }
+            } catch (e) {
+                console.error("Failed to load imported blueprint", e);
             }
             setProjectNotFound(true);
         } else {
@@ -408,6 +436,16 @@ function BlueprintContent() {
 
     return (
         <>
+            {/* Import Success Toast */}
+            {importSuccess && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-6 py-2.5 shadow-xl backdrop-blur-md text-sm font-semibold text-emerald-400 animate-in fade-in slide-in-from-top-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Blueprint imported successfully
+                </div>
+            )}
+
             {/* Header section */}
             <div className="mb-8">
                 <Link

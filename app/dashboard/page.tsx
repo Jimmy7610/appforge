@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { Blueprint } from "@/lib/ai/generateBlueprint";
 import { ArrowRight, Trash2, Search, Filter, FolderPlus, Rocket, ArrowUpDown, Play, X, Settings } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { parseShareBlueprint } from "@/lib/import/parseShareBlueprint";
 
 type SavedProject = {
     id: string;
@@ -26,6 +28,8 @@ export default function Dashboard() {
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
     const [mounted, setMounted] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const blueprintInputRef = useRef<HTMLInputElement>(null);
+    const router = useRouter();
 
     useEffect(() => {
         setMounted(true);
@@ -132,6 +136,38 @@ export default function Dashboard() {
         reader.readAsText(file);
     };
 
+    const handleImportBlueprint = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // TODO: Map import helper to drag-and-drop handlers
+        // TODO: Link share hash resolver for instant blueprint loading URL
+        // TODO: Expand import screen into a centralized blueprint gallery
+        // TODO: Add strict blueprint version migration boundary rules if major version bumps
+
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const content = event.target?.result as string;
+                const json = JSON.parse(content);
+
+                const parsedResult = parseShareBlueprint(json);
+                sessionStorage.setItem("appforge_imported_blueprint", JSON.stringify(parsedResult));
+                router.push("/project/blueprint?imported=true");
+
+            } catch (error) {
+                console.error("Failed to import shared blueprint", error);
+                window.alert("Invalid AppForge blueprint file.");
+            }
+
+            if (blueprintInputRef.current) {
+                blueprintInputRef.current.value = '';
+            }
+        };
+
+        reader.readAsText(file);
+    };
+
     const filteredProjects = projects.filter((project) => {
         const matchesSearch = project.idea?.toLowerCase().includes(searchQuery.toLowerCase()) || false;
         const matchesPlatform = platformFilter === "all" || project.platform === platformFilter;
@@ -195,8 +231,21 @@ export default function Dashboard() {
                             <Settings className="h-5 w-5" />
                         </Link>
                         <button
+                            onClick={() => blueprintInputRef.current?.click()}
+                            className="rounded-full border border-blue-500/30 bg-blue-500/10 px-5 py-2.5 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95"
+                        >
+                            Import Blueprint
+                        </button>
+                        <input
+                            type="file"
+                            accept=".json"
+                            className="hidden"
+                            ref={blueprintInputRef}
+                            onChange={handleImportBlueprint}
+                        />
+                        <button
                             onClick={() => fileInputRef.current?.click()}
-                            className="rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95"
+                            className="hidden sm:block rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95"
                         >
                             Import Project Bundle
                         </button>
