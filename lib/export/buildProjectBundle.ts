@@ -4,6 +4,7 @@ import { buildFeatureModules } from "./buildFeatureModules";
 import { buildApiLayer } from "./buildApiLayer";
 import { buildDatabaseSchema } from "./buildDatabaseSchema";
 import { buildResourceTypes } from "./buildResourceTypes";
+import { buildMockData } from "./buildMockData";
 
 export function buildProjectBundle(input: ExportInput) {
     const { idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap } = input;
@@ -248,37 +249,7 @@ export default function ProjectsPage() {
   );
 }`;
 
-    const mockDataContent = `import type { Project } from "@/lib/types";
 
-export const projects: Project[] = [
-  {
-    id: "1",
-    title: "${idea || "Core Platform"}",
-    platform: "${platformLabel}",
-    businessModel: "${modelLabel}",
-    targetUsers: "${targetUsers || "General users"}",
-    coreFeature: "${coreFeature || "Main application feature"}",
-    createdAt: new Date().toISOString(),
-  },
-  {
-    id: "2",
-    title: "${idea ? idea + " v2" : "Mobile Companion"}",
-    platform: "Mobile App",
-    businessModel: "Free Tool",
-    targetUsers: "${targetUsers || "Mobile users"}",
-    coreFeature: "Companion app with push notifications and offline support",
-    createdAt: new Date(Date.now() - 86400000 * 3).toISOString(),
-  },
-  {
-    id: "3",
-    title: "${idea ? idea + " Admin" : "Admin Dashboard"}",
-    platform: "Web App",
-    businessModel: "Internal Tool",
-    targetUsers: "Team administrators",
-    coreFeature: "Analytics dashboard with user management and reporting",
-    createdAt: new Date(Date.now() - 86400000 * 7).toISOString(),
-  },
-];`;
 
     const settingsPageContent = `export default function SettingsPage() {
   return (
@@ -374,14 +345,16 @@ export function StatCard({ label, value, helperText }: StatCardProps) {
         "components/ui/button.tsx": buttonComponentContent,
         "components/dashboard/stat-card.tsx": statCardContent,
         "lib/types.ts": typesContent,
-        "lib/mock-data.ts": mockDataContent,
+
     };
 
-    const featureFiles = buildFeatureModules({ idea: idea || "", detectedFeatures: { hasProfile, hasActivity, hasTeam } });
-    const apiFiles = buildApiLayer({ idea: idea || "", apiRoutes: blueprint.apiRoutes, detectedFeatures: { hasProfile, hasActivity, hasTeam } });
+    const detectedFeatures = { hasProfile, hasActivity, hasTeam };
+    const featureFiles = buildFeatureModules({ idea: idea || "", detectedFeatures });
+    const apiFiles = buildApiLayer({ idea: idea || "", apiRoutes: blueprint.apiRoutes, detectedFeatures });
     const schemaFiles = buildDatabaseSchema({ databaseTables: blueprint.databaseTables });
-    const resourceFiles = buildResourceTypes({ blueprint, detectedFeatures: { hasProfile, hasActivity, hasTeam } });
-    Object.assign(files, featureFiles, apiFiles, schemaFiles, resourceFiles);
+    const resourceFiles = buildResourceTypes({ blueprint, detectedFeatures });
+    const mockFiles = buildMockData({ idea: idea || "", platformLabel, modelLabel, targetUsers: targetUsers || "", coreFeature: coreFeature || "", blueprint, detectedFeatures });
+    Object.assign(files, featureFiles, apiFiles, schemaFiles, resourceFiles, mockFiles);
 
     return {
         projectName: idea || "appforge-project",
