@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState, useEffect } from "react";
 import JSZip from "jszip";
 import { generateBlueprint, type Blueprint } from "@/lib/ai/generateBlueprint";
+import { improveBlueprint } from "@/lib/ai/improveBlueprint";
 import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
 import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
 import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
@@ -35,6 +36,10 @@ function BlueprintContent() {
     const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
     const [projectNotFound, setProjectNotFound] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
+
+    // Improve UI state
+    const [isImproving, setIsImproving] = useState(false);
+    const [instructions, setInstructions] = useState("");
 
     useEffect(() => {
         setMounted(true);
@@ -86,6 +91,25 @@ function BlueprintContent() {
             console.error("Failed to regenerate blueprint", e);
         } finally {
             setIsGenerating(false);
+        }
+    };
+
+    const handleImprove = async () => {
+        if (!blueprint) return;
+        setIsImproving(true);
+        try {
+            const bp = await improveBlueprint({
+                originalInput: { idea, platform, businessModel, targetUsers, coreFeature },
+                currentBlueprint: blueprint,
+                instructions: instructions
+            });
+            setBlueprint(bp);
+            setInstructions(""); // Clear input on success
+        } catch (e) {
+            console.error("Failed to improve blueprint", e);
+            window.alert("Failed to improve blueprint. Check console for details.");
+        } finally {
+            setIsImproving(false);
         }
     };
 
@@ -299,11 +323,11 @@ function BlueprintContent() {
         }
     };
 
-    if (!mounted || isGenerating || (idParam && !projectNotFound && !blueprint)) {
+    if (!mounted || isGenerating || isImproving || (idParam && !projectNotFound && !blueprint)) {
         return (
             <div className="flex min-h-[50vh] flex-col items-center justify-center space-y-4">
                 <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-800 border-t-white"></div>
-                <div className="text-zinc-400">{isGenerating ? "Generating your blueprint..." : "Loading..."}</div>
+                <div className="text-zinc-400">{isGenerating ? "Generating your blueprint..." : isImproving ? "Improving blueprint..." : "Loading..."}</div>
             </div>
         );
     }
@@ -472,6 +496,35 @@ function BlueprintContent() {
                             placeholder="What is the main feature?"
                         />
                     </div>
+                </div>
+            </div>
+
+            {/* Improve Blueprint Controls */}
+            <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                <h3 className="text-lg font-semibold tracking-tight text-white mb-2 ml-1">Refine Architecture</h3>
+                <p className="text-sm text-zinc-400 mb-6 ml-1">Ask the AI to improve, restructure, or expand upon the current blueprint.</p>
+
+                <div className="flex flex-col sm:flex-row items-stretch gap-4">
+                    <input
+                        type="text"
+                        value={instructions}
+                        onChange={(e) => setInstructions(e.target.value)}
+                        placeholder="e.g. Add authentication, Optimize for mobile users, Make it more scalable..."
+                        className="flex-1 rounded-xl bg-zinc-900/50 px-4 py-3 border border-white/10 text-zinc-200 outline-none focus:border-blue-500/50 transition-colors"
+                        onKeyDown={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleImprove();
+                            }
+                        }}
+                    />
+                    <button
+                        onClick={handleImprove}
+                        disabled={isImproving}
+                        className="rounded-xl border border-blue-500/50 bg-blue-500/10 px-8 py-3 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 disabled:opacity-50 sm:w-auto"
+                    >
+                        ⭐ Improve Blueprint
+                    </button>
                 </div>
             </div>
 
