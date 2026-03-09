@@ -62,6 +62,20 @@ export type BlueprintCritique = {
     metadata?: AIGenerationMetadata;
 };
 
+export type ArchitectureSuggestion = {
+    id: string;
+    title: string;
+    instruction: string;
+    rationale: string;
+    category: string;
+    priority: "low" | "medium" | "high";
+};
+
+export type ArchitectureSuggestionsResult = {
+    suggestions: ArchitectureSuggestion[];
+    metadata?: AIGenerationMetadata;
+};
+
 // --- Versioning types ---
 export type BlueprintVersion = {
     id: string;

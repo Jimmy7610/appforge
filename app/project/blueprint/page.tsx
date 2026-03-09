@@ -19,7 +19,9 @@ import { buildShareBlueprint } from "@/lib/export/buildShareBlueprint";
 import { buildFullProject } from "@/lib/export/buildFullProject";
 import { MermaidDiagram } from "@/components/blueprint/mermaid-diagram";
 import { ArchitectureCritique } from "@/components/blueprint/architecture-critique";
-import { Project, BlueprintVersion, BlueprintCritique } from "@/lib/ai/types";
+import { ArchitectureSuggestions } from "@/components/blueprint/architecture-suggestions";
+import { Project, BlueprintVersion, BlueprintCritique, ArchitectureSuggestionsResult } from "@/lib/ai/types";
+import { suggestArchitectureImprovements } from "@/lib/ai/suggestArchitectureImprovements";
 import {
     normalizeProjectVersions,
     createBlueprintVersion,
@@ -83,6 +85,10 @@ function BlueprintContent() {
     // Critique UI state
     const [isCritiquing, setIsCritiquing] = useState(false);
     const [critique, setCritique] = useState<BlueprintCritique | null>(null);
+
+    // Suggestions UI state
+    const [isSuggesting, setIsSuggesting] = useState(false);
+    const [suggestions, setSuggestions] = useState<ArchitectureSuggestionsResult | null>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -172,6 +178,29 @@ function BlueprintContent() {
         }
     }, [idParam, searchParams]);
 
+    useEffect(() => {
+        if (blueprint && !isSuggesting && !suggestions) {
+            handleSuggest();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [blueprint]);
+
+    const handleSuggest = async () => {
+        if (!blueprint) return;
+        setIsSuggesting(true);
+        try {
+            const result = await suggestArchitectureImprovements(
+                { idea, platform, businessModel, targetUsers, coreFeature },
+                blueprint
+            );
+            setSuggestions(result);
+        } catch (e) {
+            console.error("Failed to generate suggestions", e);
+        } finally {
+            setIsSuggesting(false);
+        }
+    };
+
     const handleRegenerate = async () => {
         setIsGenerating(true);
         // Reset diff state since this is a full regeneration wrapper
@@ -179,6 +208,7 @@ function BlueprintContent() {
         setExplanation(null);
         setDiagram(null);
         setRenderedSvg("");
+        setSuggestions(null);
         try {
             const bp = await generateBlueprint({ idea, platform, businessModel, targetUsers, coreFeature });
             setBlueprint(bp);
@@ -208,6 +238,7 @@ function BlueprintContent() {
             setDiagram(null); // Clear previous diagram since architecture changed
             setRenderedSvg(""); // Clear previous rendered SVG
             setCritique(null); // Clear previous critique since architecture changed
+            setSuggestions(null); // Clear suggestions so they regenerate
 
             // Handle Versioning
             if (project) {
@@ -248,6 +279,7 @@ function BlueprintContent() {
         setExplanation(version.explanation ? { explanation: version.explanation, metadata: version.metadata || undefined } : null);
         setDiagram(version.diagram ? { diagram: version.diagram, metadata: version.metadata || undefined } : null);
         setCritique(version.critique || null);
+        setSuggestions(null); // Refresh suggestions for the restored version
         setRenderedSvg("");
         setActiveVersionId(version.id);
 
@@ -1031,6 +1063,18 @@ function BlueprintContent() {
                     </div>
                 </div>
             </div>
+
+            {/* Architecture Suggestions UI */}
+            {suggestions && (
+                <ArchitectureSuggestions
+                    result={suggestions}
+                    onSelectSuggestion={(instruction) => {
+                        setInstructions(instruction);
+                        window.scrollTo({ top: document.body.scrollHeight / 2, behavior: "smooth" }); // scroll slightly up towards refine panel
+                    }}
+                    isApplying={isImproving}
+                />
+            )}
 
             {/* Diff Summary UI */}
             {diffResult && hasAnyChanges(diffResult) && (

@@ -5,6 +5,7 @@ import { explainBlueprintTask } from "./explainBlueprintTask";
 import { generateArchitectureDiagramTask } from "./generateArchitectureDiagramTask";
 import { architectureChatTask } from "./architectureChatTask";
 import { critiqueBlueprintTask } from "./critiqueBlueprintTask";
+import { suggestArchitectureImprovementsTask } from "./suggestArchitectureImprovementsTask";
 
 // TODO: Register future tasks like generateDatabaseSchema, generateApiPlan, generateDocs, generateStarterContent
 export const aiTaskRegistry: Record<AITaskId, AITaskHandler<any>> = {
@@ -13,7 +14,8 @@ export const aiTaskRegistry: Record<AITaskId, AITaskHandler<any>> = {
     explainBlueprint: explainBlueprintTask,
     generateArchitectureDiagram: generateArchitectureDiagramTask,
     architectureChat: architectureChatTask,
-    critiqueBlueprint: critiqueBlueprintTask
+    critiqueBlueprint: critiqueBlueprintTask,
+    suggestArchitectureImprovements: suggestArchitectureImprovementsTask
 };
 
 export function getAITaskHandler<T extends AITaskId>(taskId: T): AITaskHandler<T> {
