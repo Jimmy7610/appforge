@@ -6,6 +6,7 @@ import { Suspense, useState, useEffect } from "react";
 import JSZip from "jszip";
 import { generateBlueprint, type Blueprint } from "@/lib/ai/generateBlueprint";
 import { improveBlueprint } from "@/lib/ai/improveBlueprint";
+import { diffBlueprints, type BlueprintDiff, hasAnyChanges } from "@/lib/ai/diffBlueprints";
 import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
 import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
 import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
@@ -40,6 +41,7 @@ function BlueprintContent() {
     // Improve UI state
     const [isImproving, setIsImproving] = useState(false);
     const [instructions, setInstructions] = useState("");
+    const [diffResult, setDiffResult] = useState<BlueprintDiff | null>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -84,6 +86,8 @@ function BlueprintContent() {
 
     const handleRegenerate = async () => {
         setIsGenerating(true);
+        // Reset diff state since this is a full regeneration wrapper
+        setDiffResult(null);
         try {
             const bp = await generateBlueprint({ idea, platform, businessModel, targetUsers, coreFeature });
             setBlueprint(bp);
@@ -103,6 +107,8 @@ function BlueprintContent() {
                 currentBlueprint: blueprint,
                 instructions: instructions
             });
+            const diff = diffBlueprints(blueprint, bp);
+            setDiffResult(diff);
             setBlueprint(bp);
             setInstructions(""); // Clear input on success
         } catch (e) {
@@ -527,6 +533,51 @@ function BlueprintContent() {
                     </button>
                 </div>
             </div>
+
+            {/* Diff Summary UI */}
+            {diffResult && hasAnyChanges(diffResult) && (
+                <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                    <h3 className="text-lg font-semibold tracking-tight text-white mb-2 ml-1">Changes from previous blueprint</h3>
+                    <p className="text-sm text-zinc-400 mb-6 ml-1">Here is a structural summary of the improvements.</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {Object.entries(diffResult).map(([sectionKey, diff]) => {
+                            if (diff.added.length === 0 && diff.removed.length === 0) return null;
+                            const titleMap: Record<string, string> = {
+                                features: "Features",
+                                techStack: "Tech Stack",
+                                databaseTables: "Database Tables",
+                                apiRoutes: "API Routes",
+                                roadmap: "Roadmap"
+                            };
+                            return (
+                                <div key={sectionKey} className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">{titleMap[sectionKey] || sectionKey}</h4>
+                                    <ul className="space-y-2 text-sm">
+                                        {diff.added.map((item: string, i: number) => (
+                                            <li key={`add-${i}`} className="flex items-start text-emerald-400">
+                                                <span className="mr-2 font-mono mt-0.5">+</span>
+                                                <span className="leading-relaxed">{item}</span>
+                                            </li>
+                                        ))}
+                                        {diff.removed.map((item: string, i: number) => (
+                                            <li key={`rm-${i}`} className="flex items-start text-rose-400 opacity-80">
+                                                <span className="mr-2 font-mono mt-0.5">-</span>
+                                                <span className="leading-relaxed line-through">{item}</span>
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+            {diffResult && !hasAnyChanges(diffResult) && (
+                <div className="mb-8 rounded-2xl border border-zinc-500/20 bg-zinc-900/50 p-6 shadow-xl backdrop-blur-sm sm:p-8 flex items-center gap-3">
+                    <div className="h-2 w-2 rounded-full bg-zinc-500"></div>
+                    <p className="text-sm text-zinc-300">No structural changes detected from this improvement pass.</p>
+                </div>
+            )}
 
             {/* Generated Architecture Card */}
             <div>
