@@ -2,7 +2,7 @@ import type { AIProviderId, AISettings } from "../types";
 import type { BlueprintInput, Blueprint } from "../types";
 
 // Extensible Task ID
-export type AITaskId = "generateBlueprint" | "improveBlueprint" | "explainBlueprint";
+export type AITaskId = "generateBlueprint" | "improveBlueprint" | "explainBlueprint" | "generateArchitectureDiagram";
 
 export type ImproveBlueprintInput = {
     originalInput: BlueprintInput;
@@ -20,11 +20,22 @@ export type ExplainBlueprintResult = {
     metadata?: import("../types").AIGenerationMetadata;
 };
 
+export type GenerateArchitectureDiagramInput = {
+    originalInput: BlueprintInput;
+    currentBlueprint: Blueprint;
+};
+
+export type GenerateArchitectureDiagramResult = {
+    diagram: string;
+    metadata?: import("../types").AIGenerationMetadata;
+};
+
 // Task Inputs Map
 export interface AITaskInputMap {
     generateBlueprint: BlueprintInput;
     improveBlueprint: ImproveBlueprintInput;
     explainBlueprint: ExplainBlueprintInput;
+    generateArchitectureDiagram: GenerateArchitectureDiagramInput;
 }
 
 // Task Results Map
@@ -32,6 +43,7 @@ export interface AITaskResultMap {
     generateBlueprint: Blueprint;
     improveBlueprint: Blueprint;
     explainBlueprint: ExplainBlueprintResult;
+    generateArchitectureDiagram: GenerateArchitectureDiagramResult;
 }
 
 // Shared Execution Context

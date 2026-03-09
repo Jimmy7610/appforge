@@ -2,12 +2,14 @@ import type { AITaskId, AITaskHandler } from "./types";
 import { generateBlueprintTask } from "./generateBlueprintTask";
 import { improveBlueprintTask } from "./improveBlueprintTask";
 import { explainBlueprintTask } from "./explainBlueprintTask";
+import { generateArchitectureDiagramTask } from "./generateArchitectureDiagramTask";
 
 // TODO: Register future tasks like generateDatabaseSchema, generateApiPlan, generateDocs, generateStarterContent
 export const aiTaskRegistry: Record<AITaskId, AITaskHandler<any>> = {
     generateBlueprint: generateBlueprintTask,
     improveBlueprint: improveBlueprintTask,
-    explainBlueprint: explainBlueprintTask
+    explainBlueprint: explainBlueprintTask,
+    generateArchitectureDiagram: generateArchitectureDiagramTask
 };
 
 export function getAITaskHandler<T extends AITaskId>(taskId: T): AITaskHandler<T> {

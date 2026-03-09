@@ -7,7 +7,8 @@ import JSZip from "jszip";
 import { generateBlueprint, type Blueprint } from "@/lib/ai/generateBlueprint";
 import { improveBlueprint } from "@/lib/ai/improveBlueprint";
 import { explainBlueprint } from "@/lib/ai/explainBlueprint";
-import type { ExplainBlueprintResult } from "@/lib/ai/tasks/types";
+import { generateArchitectureDiagram } from "@/lib/ai/generateArchitectureDiagram";
+import type { ExplainBlueprintResult, GenerateArchitectureDiagramResult } from "@/lib/ai/tasks/types";
 import { diffBlueprints, type BlueprintDiff, hasAnyChanges } from "@/lib/ai/diffBlueprints";
 import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
 import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
@@ -51,6 +52,10 @@ function BlueprintContent() {
     const [isExplaining, setIsExplaining] = useState(false);
     const [explanation, setExplanation] = useState<ExplainBlueprintResult | null>(null);
 
+    // Diagram UI state
+    const [isGeneratingDiagram, setIsGeneratingDiagram] = useState(false);
+    const [diagram, setDiagram] = useState<GenerateArchitectureDiagramResult | null>(null);
+
     useEffect(() => {
         setMounted(true);
         const isImported = getParam("imported") === "true";
@@ -92,6 +97,7 @@ function BlueprintContent() {
                             metadata: parsed.metadata || undefined
                         });
                     }
+                    setDiagram(null); // Reset diagram on import since it's not in the share schema yet
                     setImportSuccess(true);
                     setTimeout(() => setImportSuccess(false), 4000);
                     return;
@@ -124,6 +130,7 @@ function BlueprintContent() {
         // Reset diff state since this is a full regeneration wrapper
         setDiffResult(null);
         setExplanation(null);
+        setDiagram(null);
         try {
             const bp = await generateBlueprint({ idea, platform, businessModel, targetUsers, coreFeature });
             setBlueprint(bp);
@@ -170,6 +177,23 @@ function BlueprintContent() {
             window.alert("Failed to explain architecture. Check console for details.");
         } finally {
             setIsExplaining(false);
+        }
+    };
+
+    const handleGenerateDiagram = async () => {
+        if (!blueprint) return;
+        setIsGeneratingDiagram(true);
+        try {
+            const diag = await generateArchitectureDiagram({
+                originalInput: { idea, platform, businessModel, targetUsers, coreFeature },
+                currentBlueprint: blueprint
+            });
+            setDiagram(diag);
+        } catch (e) {
+            console.error("Failed to generate diagram", e);
+            window.alert("Failed to generate architecture diagram. Check console for details.");
+        } finally {
+            setIsGeneratingDiagram(false);
         }
     };
 
@@ -635,6 +659,14 @@ function BlueprintContent() {
                         {isExplaining && <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white mr-1"></span>}
                         Explain Architecture
                     </button>
+                    <button
+                        onClick={handleGenerateDiagram}
+                        disabled={isGeneratingDiagram}
+                        className="rounded-xl border border-blue-500/50 bg-blue-900/20 px-6 py-3 text-sm font-semibold text-blue-300 transition-all hover:bg-blue-800/20 active:scale-95 disabled:opacity-50 sm:w-auto shrink-0 flex items-center justify-center gap-2"
+                    >
+                        {isGeneratingDiagram && <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-white mr-1"></span>}
+                        Generate Diagram
+                    </button>
                 </div>
             </div>
 
@@ -709,6 +741,41 @@ function BlueprintContent() {
                             <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
                                 <span className={`h-1.5 w-1.5 rounded-full ${explanation.metadata.usedFallback || explanation.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
                                 Explained via: {explanation.metadata.sourceLabel}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Architecture Diagram UI */}
+            {diagram && (
+                <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                    <div className="mb-4 flex items-center justify-between ml-1">
+                        <h3 className="text-lg font-semibold tracking-tight text-blue-400">Architecture Diagram (Mermaid)</h3>
+                        <button
+                            onClick={() => {
+                                navigator.clipboard.writeText(diagram.diagram);
+                                window.alert("Mermaid code copied to clipboard!");
+                            }}
+                            className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
+                        >
+                            Copy Mermaid
+                        </button>
+                    </div>
+
+                    <div className="rounded-xl bg-zinc-900/80 p-6 border border-blue-500/10 font-mono text-sm overflow-x-auto whitespace-pre leading-relaxed text-blue-100/90">
+                        {diagram.diagram}
+                    </div>
+
+                    <p className="mt-4 text-xs text-zinc-500 italic ml-1">
+                        Note: You can paste this code into the <a href="https://mermaid.live" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">Mermaid Live Editor</a> to visualize or export as SVG/PNG.
+                    </p>
+
+                    {diagram.metadata && (
+                        <div className="mt-4 flex items-center justify-end">
+                            <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
+                                <span className={`h-1.5 w-1.5 rounded-full ${diagram.metadata.usedFallback || diagram.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                                Generated via: {diagram.metadata.sourceLabel}
                             </span>
                         </div>
                     )}
