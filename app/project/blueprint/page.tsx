@@ -9,6 +9,7 @@ import { improveBlueprint } from "@/lib/ai/improveBlueprint";
 import { explainBlueprint } from "@/lib/ai/explainBlueprint";
 import { generateArchitectureDiagram } from "@/lib/ai/generateArchitectureDiagram";
 import { architectureChat } from "@/lib/ai/architectureChat";
+import { critiqueBlueprint } from "@/lib/ai/critiqueBlueprint";
 import type { ExplainBlueprintResult, GenerateArchitectureDiagramResult, ArchitectureChatMessage, ArchitectureChatResult } from "@/lib/ai/tasks/types";
 import { diffBlueprints, type BlueprintDiff, hasAnyChanges } from "@/lib/ai/diffBlueprints";
 import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
@@ -17,7 +18,8 @@ import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
 import { buildShareBlueprint } from "@/lib/export/buildShareBlueprint";
 import { buildFullProject } from "@/lib/export/buildFullProject";
 import { MermaidDiagram } from "@/components/blueprint/mermaid-diagram";
-import { Project, BlueprintVersion } from "@/lib/ai/types";
+import { ArchitectureCritique } from "@/components/blueprint/architecture-critique";
+import { Project, BlueprintVersion, BlueprintCritique } from "@/lib/ai/types";
 import {
     normalizeProjectVersions,
     createBlueprintVersion,
@@ -78,6 +80,10 @@ function BlueprintContent() {
     const [chatInput, setChatInput] = useState("");
     const [lastChatResult, setLastChatResult] = useState<ArchitectureChatResult | null>(null);
 
+    // Critique UI state
+    const [isCritiquing, setIsCritiquing] = useState(false);
+    const [critique, setCritique] = useState<BlueprintCritique | null>(null);
+
     useEffect(() => {
         setMounted(true);
         const isImported = getParam("imported") === "true";
@@ -109,6 +115,9 @@ function BlueprintContent() {
                         }
                         if (latestVersion.diagram) {
                             setDiagram({ diagram: latestVersion.diagram, metadata: latestVersion.metadata || undefined });
+                        }
+                        if (latestVersion.critique) {
+                            setCritique(latestVersion.critique);
                         }
 
                         return;
@@ -198,10 +207,11 @@ function BlueprintContent() {
             setExplanation(null); // Clear previous explanation since architecture changed
             setDiagram(null); // Clear previous diagram since architecture changed
             setRenderedSvg(""); // Clear previous rendered SVG
+            setCritique(null); // Clear previous critique since architecture changed
 
             // Handle Versioning
             if (project) {
-                const newVersion = createBlueprintVersion(project, bp, null, null, bp.metadata || null);
+                const newVersion = createBlueprintVersion(project, bp, null, null, null, bp.metadata || null);
                 const updatedProject = appendBlueprintVersion(project, newVersion);
                 setProject(updatedProject);
                 setActiveVersionId(newVersion.id);
@@ -237,6 +247,7 @@ function BlueprintContent() {
         setBlueprint(version.blueprint);
         setExplanation(version.explanation ? { explanation: version.explanation, metadata: version.metadata || undefined } : null);
         setDiagram(version.diagram ? { diagram: version.diagram, metadata: version.metadata || undefined } : null);
+        setCritique(version.critique || null);
         setRenderedSvg("");
         setActiveVersionId(version.id);
 
@@ -299,6 +310,41 @@ function BlueprintContent() {
             window.alert("Failed to generate architecture diagram. Check console for details.");
         } finally {
             setIsGeneratingDiagram(false);
+        }
+    };
+
+    const handleCritique = async () => {
+        if (!blueprint) return;
+        setIsCritiquing(true);
+        try {
+            const crit = await critiqueBlueprint(
+                { idea, platform, businessModel, targetUsers, coreFeature },
+                blueprint
+            );
+            setCritique(crit);
+
+            // Auto-update localStorage if it's a saved project
+            if (idParam && project && activeVersionId) {
+                const stored = localStorage.getItem("appforge_blueprints");
+                if (stored) {
+                    const blueprints = JSON.parse(stored);
+                    const pIdx = blueprints.findIndex((p: any) => p.id === idParam);
+                    if (pIdx !== -1) {
+                        const updatedVersions = project.versions?.map(v =>
+                            v.id === activeVersionId ? { ...v, critique: crit } : v
+                        );
+                        const updatedProject = { ...project, versions: updatedVersions };
+                        blueprints[pIdx] = updatedProject;
+                        localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
+                        setProject(updatedProject);
+                    }
+                }
+            }
+        } catch (e) {
+            console.error("Failed to critique blueprint", e);
+            window.alert("Failed to critique architecture. Check console for details.");
+        } finally {
+            setIsCritiquing(false);
         }
     };
 
@@ -949,6 +995,20 @@ function BlueprintContent() {
                                     )}
                                     Explain Architecture
                                 </button>
+                                <button
+                                    onClick={handleCritique}
+                                    disabled={isCritiquing}
+                                    className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
+                                >
+                                    {isCritiquing ? (
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    )}
+                                    Critique Architecture
+                                </button>
                             </div>
 
                             <button
@@ -1117,6 +1177,13 @@ function BlueprintContent() {
                             </span>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Architecture Critique UI */}
+            {critique && (
+                <div className="mb-8">
+                    <ArchitectureCritique critique={critique} />
                 </div>
             )}
 

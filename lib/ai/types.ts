@@ -43,6 +43,25 @@ export type Blueprint = {
     metadata?: AIGenerationMetadata;
 };
 
+export type CritiqueItem = {
+    title: string;
+    detail: string;
+    severity: "low" | "medium" | "high";
+    recommendation: string;
+};
+
+export type BlueprintCritique = {
+    overallAssessment: string;
+    risks: CritiqueItem[];
+    bottlenecks: CritiqueItem[];
+    securityConcerns: CritiqueItem[];
+    missingConsiderations: CritiqueItem[];
+    recommendations: CritiqueItem[];
+    priorityLevel: "low" | "medium" | "high";
+    summary: string;
+    metadata?: AIGenerationMetadata;
+};
+
 // --- Versioning types ---
 export type BlueprintVersion = {
     id: string;
@@ -51,6 +70,7 @@ export type BlueprintVersion = {
     blueprint: Blueprint;
     explanation?: string | null;
     diagram?: string | null;
+    critique?: BlueprintCritique | null;
     metadata?: AIGenerationMetadata | null;
 };
 

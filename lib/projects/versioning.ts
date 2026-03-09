@@ -17,6 +17,7 @@ export function normalizeProjectVersions(project: Project): Project {
         blueprint: project.generatedBlueprint,
         explanation: null,
         diagram: null,
+        critique: null,
         metadata: project.generatedBlueprint.metadata || null
     };
 
@@ -34,6 +35,7 @@ export function createBlueprintVersion(
     blueprint: Blueprint,
     explanation?: string | null,
     diagram?: string | null,
+    critique?: import("../ai/types").BlueprintCritique | null,
     metadata?: AIGenerationMetadata | null
 ): BlueprintVersion {
     const nextVersionNumber = (project.versions?.length || 0) + 1;
@@ -45,6 +47,7 @@ export function createBlueprintVersion(
         blueprint,
         explanation,
         diagram,
+        critique,
         metadata
     };
 }

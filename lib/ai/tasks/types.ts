@@ -2,7 +2,7 @@ import type { AIProviderId, AISettings } from "../types";
 import type { BlueprintInput, Blueprint } from "../types";
 
 // Extensible Task ID
-export type AITaskId = "generateBlueprint" | "improveBlueprint" | "explainBlueprint" | "generateArchitectureDiagram" | "architectureChat";
+export type AITaskId = "generateBlueprint" | "improveBlueprint" | "explainBlueprint" | "generateArchitectureDiagram" | "architectureChat" | "critiqueBlueprint";
 
 export type ArchitectureChatMessage = {
     role: "user" | "assistant";
@@ -55,6 +55,7 @@ export interface AITaskInputMap {
     explainBlueprint: ExplainBlueprintInput;
     generateArchitectureDiagram: GenerateArchitectureDiagramInput;
     architectureChat: ArchitectureChatInput;
+    critiqueBlueprint: ExplainBlueprintInput; // Critique uses the same input as Explain/Diagram
 }
 
 // Task Results Map
@@ -64,6 +65,7 @@ export interface AITaskResultMap {
     explainBlueprint: ExplainBlueprintResult;
     generateArchitectureDiagram: GenerateArchitectureDiagramResult;
     architectureChat: ArchitectureChatResult;
+    critiqueBlueprint: import("../types").BlueprintCritique;
 }
 
 // Shared Execution Context
