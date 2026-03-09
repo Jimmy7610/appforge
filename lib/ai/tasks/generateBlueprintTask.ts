@@ -3,7 +3,8 @@ import type { Blueprint } from "../types";
 import { generateLocalBlueprint } from "../generateBlueprint";
 import type { AIProviderId, AISettings } from "../types";
 
-function extractJson(text: string): string {
+function extractJson(text: string | null | undefined): string {
+    if (!text) return "{}";
     const jsonMatch = text.match(/```json\n?([\s\S]*?)\n?```/) || text.match(/```\n?([\s\S]*?)\n?```/);
     if (jsonMatch) {
         return jsonMatch[1].trim();
@@ -43,8 +44,15 @@ IMPORTANT: Reply ONLY with the raw JSON object. Do not wrap in \`\`\`json ... \`
         const cleanJson = extractJson(rawContent);
         const parsed = JSON.parse(cleanJson) as Blueprint;
 
-        if (!Array.isArray(parsed.features) || !Array.isArray(parsed.techStack)) {
-            throw new Error("AI response missing required arrays (features/techStack).");
+        // Defensive bounding: ensure structurally it is a safe blueprint even if model hallucinated
+        parsed.features = Array.isArray(parsed.features) ? parsed.features : [];
+        parsed.techStack = Array.isArray(parsed.techStack) ? parsed.techStack : [];
+        parsed.databaseTables = Array.isArray(parsed.databaseTables) ? parsed.databaseTables : [];
+        parsed.apiRoutes = Array.isArray(parsed.apiRoutes) ? parsed.apiRoutes : [];
+        parsed.roadmap = Array.isArray(parsed.roadmap) ? parsed.roadmap : [];
+
+        if (parsed.features.length === 0 || parsed.techStack.length === 0) {
+            throw new Error("AI response missing core arrays (features/techStack).");
         }
 
         return parsed;

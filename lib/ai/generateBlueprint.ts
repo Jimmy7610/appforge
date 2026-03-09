@@ -103,7 +103,7 @@ const roadmapSteps = {
 export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
     const { coreFeature, idea } = input;
 
-    const mainFeature = coreFeature || idea || "Core application functionality";
+    const mainFeature = (coreFeature?.trim() || idea?.trim()) || "Core application functionality";
 
     const features = [
         mainFeature,

@@ -306,13 +306,19 @@ export function StatCard({ label, value, helperText }: StatCardProps) {
   );
 }`;
 
+    const tStack = Array.isArray(blueprint.techStack) ? blueprint.techStack : [];
+    const features = Array.isArray(blueprint.features) ? blueprint.features : [];
+    const tables = Array.isArray(blueprint.databaseTables) ? blueprint.databaseTables : [];
+    const routes = Array.isArray(blueprint.apiRoutes) ? blueprint.apiRoutes : [];
+    const roadmap = Array.isArray(blueprint.roadmap) ? blueprint.roadmap : [];
+
     // Build the files object with conditional pages
     const files: Record<string, string> = {
-        "README.md": `# Project Overview\n\n${idea || "No idea provided"}\n\n## Target Users\n${targetUsers || "Not provided"}\n\n## Core Feature\n${coreFeature || "Not provided"}\n\n## Suggested Tech Stack\n${blueprint.techStack.map(t => `- ${t}`).join("\n")}`,
-        "docs/PROJECT_SPEC.md": `# Project Specification\n\n**App Idea:**\n${idea || "Not provided"}\n\n**Platform:**\n${platformLabel}\n\n**Business Model:**\n${modelLabel}\n\n**Target Users:**\n${targetUsers || "Not provided"}\n\n**Core Feature:**\n${coreFeature || "Not provided"}\n\n**Features Summary:**\n${blueprint.features.map(f => `- ${f}`).join("\n")}`,
-        "docs/DATABASE_SCHEMA.md": `# Database Schema\n\n${blueprint.databaseTables.map(t => `- ${t}`).join("\n")}`,
-        "docs/API_ROUTES.md": `# API Routes\n\n${blueprint.apiRoutes.map(r => `- ${r}`).join("\n")}`,
-        "docs/TASKS.md": `# Tasks & Roadmap\n\n## Roadmap\n${blueprint.roadmap.map(r => `- [ ] ${r}`).join("\n")}\n\n## Features to Implement\n${blueprint.features.map(f => `- [ ] ${f}`).join("\n")}`,
+        "README.md": `# Project Overview\n\n${idea || "No idea provided"}\n\n## Target Users\n${targetUsers || "Not provided"}\n\n## Core Feature\n${coreFeature || "Not provided"}\n\n## Suggested Tech Stack\n${tStack.map(t => `- ${t}`).join("\n")}`,
+        "docs/PROJECT_SPEC.md": `# Project Specification\n\n**App Idea:**\n${idea || "Not provided"}\n\n**Platform:**\n${platformLabel}\n\n**Business Model:**\n${modelLabel}\n\n**Target Users:**\n${targetUsers || "Not provided"}\n\n**Core Feature:**\n${coreFeature || "Not provided"}\n\n**Features Summary:**\n${features.map(f => `- ${f}`).join("\n")}`,
+        "docs/DATABASE_SCHEMA.md": `# Database Schema\n\n${tables.map(t => `- ${t}`).join("\n")}`,
+        "docs/API_ROUTES.md": `# API Routes\n\n${routes.map(r => `- ${r}`).join("\n")}`,
+        "docs/TASKS.md": `# Tasks & Roadmap\n\n## Roadmap\n${roadmap.map(r => `- [ ] ${r}`).join("\n")}\n\n## Features to Implement\n${features.map(f => `- [ ] ${f}`).join("\n")}`,
         "app/globals.css": globalsCssContent,
         "app/layout.tsx": appLayoutContent,
         "app/page.tsx": appPageContent,
@@ -322,8 +328,6 @@ export function StatCard({ label, value, helperText }: StatCardProps) {
         "app/api/health/route.ts": healthRouteContent,
         "components/ui/button.tsx": buttonComponentContent,
         "components/dashboard/stat-card.tsx": statCardContent,
-
-
     };
 
     const detectedFeatures = { hasProfile, hasActivity, hasTeam };

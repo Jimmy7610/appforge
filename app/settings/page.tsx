@@ -88,8 +88,8 @@ export default function SettingsPage() {
                 model: model.trim() || undefined,
             };
 
-            if (apiKey.trim()) newSettings.apiKey = apiKey.trim();
-            if (baseUrl.trim()) newSettings.baseUrl = baseUrl.trim();
+            if (apiKey && apiKey.trim().length > 0) newSettings.apiKey = apiKey.trim();
+            if (baseUrl && baseUrl.trim().length > 0) newSettings.baseUrl = baseUrl.trim();
 
             const resolved = resolveAISettings(newSettings);
             saveAISettings(resolved);
