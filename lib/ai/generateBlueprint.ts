@@ -1,9 +1,13 @@
+import type { AIProviderId } from "./types";
+import { getAIProvider } from "./providerRegistry";
+
 export type BlueprintInput = {
     idea?: string;
     platform?: string;
     businessModel?: string;
     targetUsers?: string;
     coreFeature?: string;
+    provider?: AIProviderId;
 };
 
 export type Blueprint = {
@@ -103,7 +107,11 @@ const roadmapSteps = {
     ]
 };
 
-export function generateBlueprint(input: BlueprintInput): Blueprint {
+/**
+ * Local blueprint generation — deterministic randomized scaffolding.
+ * Used as the default/placeholder implementation by all providers.
+ */
+export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
     const { coreFeature, idea } = input;
 
     const mainFeature = coreFeature || idea || "Core application functionality";
@@ -164,4 +172,21 @@ export function generateBlueprint(input: BlueprintInput): Blueprint {
         apiRoutes: uniqueApiRoutes,
         roadmap
     };
+}
+
+/**
+ * Main entry point — resolves the provider and delegates blueprint generation.
+ * Synchronous callers (no provider) get the local blueprint directly.
+ * Async callers (with provider) go through the provider registry.
+ */
+export function generateBlueprint(input: BlueprintInput): Blueprint {
+    // When a provider is specified, resolve through the registry.
+    // For now all providers use the same local generation, so we call it directly
+    // to keep the sync return signature stable for existing callers.
+    // TODO: When real API calls are wired, make this function async and
+    // update callers to await the result.
+    const provider = getAIProvider(input.provider);
+    void provider; // Acknowledged — will be used once providers make real API calls
+
+    return generateLocalBlueprint(input);
 }
