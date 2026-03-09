@@ -9,7 +9,8 @@ interface EditableListProps {
     mono?: boolean;
 }
 
-export function EditableList({ title, items, onItemsChange, placeholder = "Add new item...", mono = false }: EditableListProps) {
+export function EditableList({ title, items = [], onItemsChange, placeholder = "Add new item...", mono = false }: EditableListProps) {
+    const safeItems = Array.isArray(items) ? items : [];
     const [isEditing, setIsEditing] = useState<number | null>(null);
     const [editValue, setEditValue] = useState("");
     const [newItemValue, setNewItemValue] = useState("");
@@ -26,7 +27,7 @@ export function EditableList({ title, items, onItemsChange, placeholder = "Add n
         if (editValue.trim() === "") {
             handleDelete(idx);
         } else {
-            const newItems = [...items];
+            const newItems = [...safeItems];
             newItems[idx] = editValue.trim();
             onItemsChange(newItems);
         }
@@ -34,7 +35,7 @@ export function EditableList({ title, items, onItemsChange, placeholder = "Add n
     };
 
     const handleDelete = (idx: number) => {
-        const newItems = items.filter((_, i) => i !== idx);
+        const newItems = safeItems.filter((_, i) => i !== idx);
         onItemsChange(newItems);
         setIsEditing(null);
     };
@@ -49,7 +50,7 @@ export function EditableList({ title, items, onItemsChange, placeholder = "Add n
 
     const handleAddNew = () => {
         if (newItemValue.trim()) {
-            onItemsChange([...items, newItemValue.trim()]);
+            onItemsChange([...safeItems, newItemValue.trim()]);
             setNewItemValue("");
         }
     };
@@ -73,7 +74,7 @@ export function EditableList({ title, items, onItemsChange, placeholder = "Add n
             </div>
 
             <ul className={`space-y-2 flex-1 ${mono ? "font-mono text-sm" : ""}`}>
-                {items.map((item, idx) => (
+                {safeItems.map((item, idx) => (
                     <li key={idx} className="group flex items-start gap-2 rounded-lg p-1 -mx-1 hover:bg-white/5 transition-colors">
                         {isEditing === idx ? (
                             <div className="flex w-full items-center gap-2">
@@ -119,7 +120,7 @@ export function EditableList({ title, items, onItemsChange, placeholder = "Add n
                     </li>
                 ))}
 
-                {items.length === 0 && !isAddingMsg && (
+                {safeItems.length === 0 && !isAddingMsg && (
                     <div className="text-zinc-600 text-sm italic py-2 px-1">No items yet.</div>
                 )}
             </ul>

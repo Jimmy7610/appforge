@@ -33,6 +33,7 @@ import {
     restoreBlueprintVersion
 } from "@/lib/projects/versioning";
 import { EditableList } from "@/components/blueprint/editable-list";
+import { loadSavedProjects, saveProjects } from "@/lib/projects/storage";
 
 function BlueprintContent() {
     const searchParams = useSearchParams();
@@ -101,9 +102,8 @@ function BlueprintContent() {
 
         if (idParam) {
             try {
-                const stored = localStorage.getItem("appforge_blueprints");
-                if (stored) {
-                    const blueprints = JSON.parse(stored);
+                const blueprints = loadSavedProjects();
+                if (blueprints.length > 0) {
                     const foundProject = blueprints.find((p: any) => p.id === idParam);
                     if (foundProject) {
                         const normalizedProject = normalizeProjectVersions(foundProject);
@@ -254,14 +254,11 @@ function BlueprintContent() {
 
                 // Auto-update if it's a saved project
                 if (idParam) {
-                    const stored = localStorage.getItem("appforge_blueprints");
-                    if (stored) {
-                        const blueprints = JSON.parse(stored);
-                        const idx = blueprints.findIndex((p: any) => p.id === idParam);
-                        if (idx !== -1) {
-                            blueprints[idx] = updatedProject;
-                            localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
-                        }
+                    const blueprints = loadSavedProjects();
+                    const idx = blueprints.findIndex((p: any) => p.id === idParam);
+                    if (idx !== -1) {
+                        blueprints[idx] = updatedProject;
+                        saveProjects(blueprints);
                     }
                 }
             }
@@ -298,19 +295,16 @@ function BlueprintContent() {
         // Note: we don't change the version history, we just change which one is "current"
         // in terms of the generatedBlueprint field for compatibility
         if (idParam) {
-            const stored = localStorage.getItem("appforge_blueprints");
-            if (stored) {
-                const blueprints = JSON.parse(stored);
-                const idx = blueprints.findIndex((p: any) => p.id === idParam);
-                if (idx !== -1) {
-                    const updatedProject: Project = {
-                        ...project,
-                        generatedBlueprint: version.blueprint
-                    };
-                    blueprints[idx] = updatedProject;
-                    localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
-                    setProject(updatedProject);
-                }
+            const blueprints = loadSavedProjects();
+            const idx = blueprints.findIndex((p: any) => p.id === idParam);
+            if (idx !== -1) {
+                const updatedProject: Project = {
+                    ...project,
+                    generatedBlueprint: version.blueprint
+                };
+                blueprints[idx] = updatedProject;
+                saveProjects(blueprints);
+                setProject(updatedProject);
             }
         }
     };
@@ -362,19 +356,16 @@ function BlueprintContent() {
 
             // Auto-update localStorage if it's a saved project
             if (idParam && project && activeVersionId) {
-                const stored = localStorage.getItem("appforge_blueprints");
-                if (stored) {
-                    const blueprints = JSON.parse(stored);
-                    const pIdx = blueprints.findIndex((p: any) => p.id === idParam);
-                    if (pIdx !== -1) {
-                        const updatedVersions = project.versions?.map(v =>
-                            v.id === activeVersionId ? { ...v, critique: crit } : v
-                        );
-                        const updatedProject = { ...project, versions: updatedVersions };
-                        blueprints[pIdx] = updatedProject;
-                        localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
-                        setProject(updatedProject);
-                    }
+                const blueprints = loadSavedProjects();
+                const pIdx = blueprints.findIndex((p: any) => p.id === idParam);
+                if (pIdx !== -1) {
+                    const updatedVersions = project.versions?.map(v =>
+                        v.id === activeVersionId ? { ...v, critique: crit } : v
+                    );
+                    const updatedProject = { ...project, versions: updatedVersions };
+                    blueprints[pIdx] = updatedProject;
+                    saveProjects(blueprints);
+                    setProject(updatedProject);
                 }
             }
         } catch (e) {
@@ -482,23 +473,20 @@ function BlueprintContent() {
         setBlueprint(updatedBlueprint);
 
         if (idParam && project && activeVersionId) {
-            const stored = localStorage.getItem("appforge_blueprints");
-            if (stored) {
-                const blueprints = JSON.parse(stored);
-                const pIdx = blueprints.findIndex((p: any) => p.id === idParam);
-                if (pIdx !== -1) {
-                    const updatedVersions = project.versions?.map(v =>
-                        v.id === activeVersionId ? { ...v, blueprint: updatedBlueprint } : v
-                    );
-                    const updatedProject = {
-                        ...project,
-                        versions: updatedVersions,
-                        generatedBlueprint: activeVersionId === (project.versions?.[project.versions.length - 1]?.id) ? updatedBlueprint : project.generatedBlueprint
-                    };
-                    blueprints[pIdx] = updatedProject;
-                    localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
-                    setProject(updatedProject);
-                }
+            const blueprints = loadSavedProjects();
+            const pIdx = blueprints.findIndex((p: any) => p.id === idParam);
+            if (pIdx !== -1) {
+                const updatedVersions = project.versions?.map(v =>
+                    v.id === activeVersionId ? { ...v, blueprint: updatedBlueprint } : v
+                );
+                const updatedProject = {
+                    ...project,
+                    versions: updatedVersions,
+                    generatedBlueprint: activeVersionId === (project.versions?.[project.versions.length - 1]?.id) ? updatedBlueprint : project.generatedBlueprint
+                };
+                blueprints[pIdx] = updatedProject;
+                saveProjects(blueprints);
+                setProject(updatedProject);
             }
         }
     };
@@ -520,10 +508,9 @@ function BlueprintContent() {
         const newProject = normalizeProjectVersions(baseProject);
 
         try {
-            const stored = localStorage.getItem("appforge_blueprints");
-            const blueprints = stored ? JSON.parse(stored) : [];
+            const blueprints = loadSavedProjects();
             blueprints.push(newProject);
-            localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
+            saveProjects(blueprints);
 
             if (!idParam) {
                 router.push("/dashboard");
@@ -540,13 +527,12 @@ function BlueprintContent() {
         if (!idParam || !blueprint) return;
 
         try {
-            const stored = localStorage.getItem("appforge_blueprints");
-            if (!stored) {
+            const blueprints = loadSavedProjects();
+            if (blueprints.length === 0) {
                 window.alert("Project could not be updated.");
                 return;
             }
 
-            const blueprints = JSON.parse(stored);
             const index = blueprints.findIndex((p: any) => p.id === idParam);
 
             if (index === -1) {
@@ -574,7 +560,7 @@ function BlueprintContent() {
             });
 
             blueprints[index] = updatedProject;
-            localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
+            saveProjects(blueprints);
             setProject(updatedProject);
 
             window.alert("Project updated successfully.");
@@ -1572,9 +1558,11 @@ export default function BlueprintPreview() {
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-32">
                 {/* Header */}
                 <header className="mb-12">
-                    <Suspense fallback={<div className="text-zinc-500">Loading Blueprint...</div>}>
-                        <BlueprintContent />
-                    </Suspense>
+                    <ErrorBoundary fallback={<div className="p-8 text-center text-red-400 bg-red-500/10 rounded-2xl border border-red-500/20 shadow-lg backdrop-blur-sm mt-8"><p className="font-bold mb-2">Something went wrong.</p><p className="text-sm">An error occurred while rendering the blueprint. Please try refreshing the page or loading a different project.</p></div>}>
+                        <Suspense fallback={<div className="text-zinc-500">Loading Blueprint...</div>}>
+                            <BlueprintContent />
+                        </Suspense>
+                    </ErrorBoundary>
                 </header>
             </div>
         </div>

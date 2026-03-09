@@ -6,6 +6,7 @@ import { Blueprint } from "@/lib/ai/generateBlueprint";
 import { ArrowRight, Trash2, Search, Filter, FolderPlus, Rocket, ArrowUpDown, Play, X, Settings } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { parseShareBlueprint } from "@/lib/import/parseShareBlueprint";
+import { loadSavedProjects, saveProjects } from "@/lib/projects/storage";
 
 type SavedProject = {
     id: string;
@@ -33,14 +34,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         setMounted(true);
-        try {
-            const stored = localStorage.getItem("appforge_blueprints");
-            if (stored) {
-                setProjects(JSON.parse(stored));
-            }
-        } catch (e) {
-            console.error("Failed to load projects", e);
-        }
+        setProjects(loadSavedProjects());
     }, []);
 
     const displayMap: Record<string, string | undefined> = {
@@ -64,7 +58,7 @@ export default function Dashboard() {
         try {
             const updatedProjects = projects.filter((project) => project.id !== id);
             setProjects(updatedProjects);
-            localStorage.setItem("appforge_blueprints", JSON.stringify(updatedProjects));
+            saveProjects(updatedProjects);
         } catch (e) {
             console.error("Failed to delete project", e);
         }
@@ -121,7 +115,7 @@ export default function Dashboard() {
 
                 const updatedProjects = [...projects, newProject];
                 setProjects(updatedProjects);
-                localStorage.setItem("appforge_blueprints", JSON.stringify(updatedProjects));
+                saveProjects(updatedProjects);
 
             } catch (error) {
                 console.error("Failed to import bundle", error);

@@ -10,6 +10,7 @@ import { buildFileTree, FileNode } from "@/lib/utils/preview-utils";
 import { BrowserTree } from "@/components/blueprint/browser-tree";
 import { CodeViewer } from "@/components/blueprint/code-viewer";
 import { BackToDashboard } from "@/components/back-to-dashboard";
+import { loadSavedProjects } from "@/lib/projects/storage";
 
 function PreviewContent() {
     const searchParams = useSearchParams();
@@ -28,16 +29,11 @@ function PreviewContent() {
         }
 
         const loadProject = () => {
-            const stored = localStorage.getItem("appforge_blueprints");
-            if (stored) {
-                const projects: Project[] = JSON.parse(stored);
-                const found = projects.find((p) => p.id === id);
-                if (found) {
-                    setProject(found);
-                    generateFiles(found);
-                } else {
-                    router.push("/library");
-                }
+            const projects: Project[] = loadSavedProjects();
+            const found = projects.find((p) => p.id === id);
+            if (found) {
+                setProject(found);
+                generateFiles(found);
             } else {
                 router.push("/library");
             }

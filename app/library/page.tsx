@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import { Project } from "@/lib/ai/types";
+import { loadSavedProjects, saveProjects } from "@/lib/projects/storage";
 
 export default function LibraryPage() {
     const router = useRouter();
@@ -19,17 +20,7 @@ export default function LibraryPage() {
     }, []);
 
     const loadProjects = () => {
-        try {
-            const stored = localStorage.getItem("appforge_blueprints");
-            if (stored) {
-                setProjects(JSON.parse(stored));
-            } else {
-                setProjects([]);
-            }
-        } catch (e) {
-            console.error("Failed to load projects", e);
-            setProjects([]);
-        }
+        setProjects(loadSavedProjects());
     };
 
     const handleDelete = (id: string, e: React.MouseEvent) => {
@@ -39,7 +30,7 @@ export default function LibraryPage() {
         }
 
         const updated = projects.filter(p => p.id !== id);
-        localStorage.setItem("appforge_blueprints", JSON.stringify(updated));
+        saveProjects(updated);
         setProjects(updated);
     };
 
@@ -53,7 +44,7 @@ export default function LibraryPage() {
         };
 
         const updated = [clone, ...projects];
-        localStorage.setItem("appforge_blueprints", JSON.stringify(updated));
+        saveProjects(updated);
         setProjects(updated);
     };
 
