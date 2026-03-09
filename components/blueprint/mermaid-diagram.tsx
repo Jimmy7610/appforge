@@ -32,8 +32,16 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
 
         const cleanMermaidSource = (raw: string) => {
             let cleaned = raw.trim();
-            // Fix sequence diagram arrows hallucinated in flowcharts (e.g. --|Label| -> -->|Label|)
-            cleaned = cleaned.replace(/--\|([^|]+)\|/g, "-->|$1|");
+
+            // 1. Fix sequence diagram arrows hallucinated in flowcharts (e.g. --|Label| -> -->|Label|)
+            cleaned = cleaned.replace(/--\|/g, "-->|");
+
+            // 2. Fix trailing pipes on nodes (e.g. API -->|Label| /auth| -> API -->|Label| "/auth")
+            cleaned = cleaned.replace(/-->\|([^|]+)\|\s*([^\s\[\]\(\)-]+)\|/g, '-->|$1| "$2"');
+
+            // 3. Fix unquoted paths as standalone nodes (e.g. API --> /auth -> API --> "/auth")
+            cleaned = cleaned.replace(/-->\s*(\/[^\s\[\]\(\)-]+)(?!\s*\[|\s*\(|\s*"|[\n\r]|$)/g, '--> "$1"');
+
             return cleaned;
         };
 

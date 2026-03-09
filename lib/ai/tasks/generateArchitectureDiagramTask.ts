@@ -24,11 +24,14 @@ API Routes: ${currentBlueprint.apiRoutes.join(", ")}
 Instructions:
 1. Create a "graph TD" Mermaid diagram.
 2. Use nodes for: User/Client, Frontend/App Layer, API/Backend Layer, Database/Data Layer.
-3. CRITICAL: For nodes containing special characters (/, spaces, dots), you MUST use labels with double quotes.
+3. CRITICAL: For nodes containing special characters (/, spaces, dots, dashes), you MUST use labels with double quotes.
    Example: User["User / Client"] --> Frontend["Frontend / App Layer"]
-4. Use standard valid arrow syntax: --> or -->|Label|. Do NOT use sequence diagram syntax like --|.
-5. Keep the diagram professional and clear.
-6. Return ONLY a JSON object with a single "diagram" field containing the Mermaid code.
+4. CRITICAL: Use standard valid arrow syntax: --> or -->|Label|. 
+   - NEVER use --|Label| (double dash). It MUST be three dashes for labeled arrows.
+   - NEVER put a pipe | at the end of a line or after a node ID.
+5. If a node represents a path or URL, always wrap it in quotes: API --> Auth["/api/auth"]
+6. Keep the diagram professional and clear.
+7. Return ONLY a JSON object with a single "diagram" field containing the Mermaid code.
 
 Example Output Format:
 {
