@@ -15,6 +15,7 @@ import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
 import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
 import { buildShareBlueprint } from "@/lib/export/buildShareBlueprint";
 import { buildFullProject } from "@/lib/export/buildFullProject";
+import { MermaidDiagram } from "@/components/blueprint/mermaid-diagram";
 
 function BlueprintContent() {
     const searchParams = useSearchParams();
@@ -156,6 +157,7 @@ function BlueprintContent() {
             setBlueprint(bp);
             setInstructions(""); // Clear input on success
             setExplanation(null); // Clear previous explanation since architecture changed
+            setDiagram(null); // Clear previous diagram since architecture changed
         } catch (e) {
             console.error("Failed to improve blueprint", e);
             window.alert("Failed to improve blueprint. Check console for details.");
@@ -800,13 +802,29 @@ function BlueprintContent() {
                         </button>
                     </div>
 
+                    {/* Live Diagram Preview */}
+                    <div className="mb-6">
+                        <MermaidDiagram source={diagram.diagram} />
+                    </div>
+
+                    <div className="mb-3 flex items-center justify-between ml-1">
+                        <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Mermaid Source</h4>
+                        <span className="text-[10px] text-zinc-500 italic">Rendered via Mermaid.js</span>
+                    </div>
+
                     <div className="rounded-xl bg-zinc-900/80 p-6 border border-blue-500/10 font-mono text-sm overflow-x-auto whitespace-pre leading-relaxed text-blue-100/90">
                         {diagram.diagram}
                     </div>
 
                     <p className="mt-4 text-xs text-zinc-500 italic ml-1">
-                        Note: You can paste this code into the <a href="https://mermaid.live" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">Mermaid Live Editor</a> to visualize or export as SVG/PNG.
+                        Note: Live preview is rendered from the Mermaid source above. You can copy the source for external editors or sharing.
                     </p>
+
+                    {/* TODO: PNG Export */}
+                    {/* TODO: SVG Download */}
+                    {/* TODO: Theme Switching (Light/Dark) */}
+                    {/* TODO: Zoom and Pan support */}
+                    {/* TODO: Infra/Deployment Diagrams */}
 
                     {diagram.metadata && (
                         <div className="mt-4 flex items-center justify-end">
