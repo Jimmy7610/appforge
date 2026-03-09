@@ -26,12 +26,21 @@ export type BlueprintInput = {
     provider?: AIProviderId;
 };
 
+// --- Generation Metadata ---
+export type AIGenerationMetadata = {
+    provider: AIProviderId | "local";
+    model: string;
+    usedFallback: boolean;
+    sourceLabel: string;
+};
+
 export type Blueprint = {
     features: string[];
     techStack: string[];
     databaseTables: string[];
     apiRoutes: string[];
     roadmap: string[];
+    metadata?: AIGenerationMetadata;
 };
 
 // --- Blueprint generation contract ---

@@ -14,7 +14,13 @@ export const ollamaProvider: AIProvider = {
 
     async generateBlueprint(input: BlueprintInput, settings: AISettings): Promise<AIBlueprintGenerationResult> {
         // Placeholder: uses local generation until real API is wired
-        const blueprint = generateLocalBlueprint(input);
-        return { blueprint, provider: "ollama" };
+        const localBp = generateLocalBlueprint(input);
+        localBp.metadata = {
+            provider: "ollama",
+            model: settings.model || "llama3",
+            usedFallback: true,
+            sourceLabel: `Ollama (${settings.model || "llama3"}) — local fallback`
+        };
+        return { blueprint: localBp, provider: "ollama" };
     },
 };

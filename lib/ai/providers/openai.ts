@@ -33,8 +33,15 @@ export const openAIProvider: AIProvider = {
     async generateBlueprint(input: BlueprintInput, settings: AISettings): Promise<AIBlueprintGenerationResult> {
         if (!settings.apiKey) {
             console.warn("OpenAI: No API key provided, falling back to local generation.");
+            const localBp = generateLocalBlueprint(input);
+            localBp.metadata = {
+                provider: "openai",
+                model: settings.model || "gpt-3.5-turbo",
+                usedFallback: true,
+                sourceLabel: `OpenAI (${settings.model || "gpt-3.5-turbo"}) — local fallback`
+            };
             return {
-                blueprint: generateLocalBlueprint(input),
+                blueprint: localBp,
                 provider: "openai"
             };
         }
@@ -75,6 +82,13 @@ export const openAIProvider: AIProvider = {
                 throw new Error("OpenAI response missing required arrays.");
             }
 
+            parsed.metadata = {
+                provider: "openai",
+                model: settings.model || "gpt-3.5-turbo",
+                usedFallback: false,
+                sourceLabel: `OpenAI (${settings.model || "gpt-3.5-turbo"})`
+            };
+
             return {
                 blueprint: parsed,
                 provider: "openai"
@@ -83,8 +97,15 @@ export const openAIProvider: AIProvider = {
         } catch (e) {
             console.error("OpenAI generation failed:", e);
             console.warn("Falling back to local generation.");
+            const localBp = generateLocalBlueprint(input);
+            localBp.metadata = {
+                provider: "openai",
+                model: settings.model || "gpt-3.5-turbo",
+                usedFallback: true,
+                sourceLabel: `OpenAI (${settings.model || "gpt-3.5-turbo"}) — local fallback`
+            };
             return {
-                blueprint: generateLocalBlueprint(input),
+                blueprint: localBp,
                 provider: "openai"
             };
         }

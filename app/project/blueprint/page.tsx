@@ -327,6 +327,8 @@ function BlueprintContent() {
         return null;
     }
 
+    const { features, techStack, databaseTables, apiRoutes, roadmap, metadata } = blueprint;
+
     return (
         <>
             {/* Header section */}
@@ -486,7 +488,7 @@ function BlueprintContent() {
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Features</h3>
                             <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
                                 <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                    {blueprint.features.map((item: string, idx: number) => (
+                                    {features.map((item: string, idx: number) => (
                                         <li key={idx} className="leading-relaxed">{item}</li>
                                     ))}
                                 </ul>
@@ -499,7 +501,7 @@ function BlueprintContent() {
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Tech Stack</h3>
                                 <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5 h-full">
                                     <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                        {blueprint.techStack.map((item: string, idx: number) => (
+                                        {techStack.map((item: string, idx: number) => (
                                             <li key={idx} className="leading-relaxed">{item}</li>
                                         ))}
                                     </ul>
@@ -511,7 +513,7 @@ function BlueprintContent() {
                                 <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Database Tables</h3>
                                 <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5 h-full">
                                     <ul className="list-inside list-disc space-y-2 text-zinc-300 font-mono text-sm">
-                                        {blueprint.databaseTables.map((item: string, idx: number) => (
+                                        {databaseTables.map((item: string, idx: number) => (
                                             <li key={idx} className="leading-relaxed">{item}</li>
                                         ))}
                                     </ul>
@@ -524,7 +526,7 @@ function BlueprintContent() {
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">API Routes</h3>
                             <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
                                 <ul className="list-inside list-disc space-y-2 text-zinc-300 font-mono text-sm">
-                                    {blueprint.apiRoutes.map((item: string, idx: number) => (
+                                    {apiRoutes.map((item: string, idx: number) => (
                                         <li key={idx} className="leading-relaxed">{item}</li>
                                     ))}
                                 </ul>
@@ -536,7 +538,7 @@ function BlueprintContent() {
                             <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Development Roadmap</h3>
                             <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
                                 <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                    {blueprint.roadmap.map((item: string, idx: number) => (
+                                    {roadmap.map((item: string, idx: number) => (
                                         <li key={idx} className="leading-relaxed">{item}</li>
                                     ))}
                                 </ul>
@@ -544,6 +546,16 @@ function BlueprintContent() {
                         </div>
 
                     </div>
+
+                    {/* AI Source Metadata */}
+                    {metadata && (
+                        <div className="mt-4 flex items-center gap-2">
+                            <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
+                                <span className={`h-1.5 w-1.5 rounded-full ${metadata.usedFallback || metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                                Generated using: {metadata.sourceLabel}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 

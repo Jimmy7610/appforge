@@ -158,7 +158,13 @@ export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
         techStack: uniqueTechStack,
         databaseTables: uniqueDatabaseTables,
         apiRoutes: uniqueApiRoutes,
-        roadmap
+        roadmap,
+        metadata: {
+            provider: "local",
+            model: "deterministic",
+            usedFallback: false,
+            sourceLabel: "Local generator",
+        }
     };
 }
 
