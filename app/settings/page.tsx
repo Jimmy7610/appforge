@@ -8,6 +8,7 @@ import type { AIProviderId, AISettings } from "@/lib/ai/types";
 import { getStoredAISettings } from "@/lib/ai/getStoredAISettings";
 import { saveAISettings, clearAISettings } from "@/lib/ai/storage";
 import { resolveAISettings, providerDefaults } from "@/lib/ai/settings";
+import { fetchOllamaModels } from "@/lib/ai/providers/fetchOllamaModels";
 
 export default function SettingsPage() {
     const [mounted, setMounted] = useState(false);
@@ -22,6 +23,11 @@ export default function SettingsPage() {
     const [isSaving, setIsSaving] = useState(false);
     const [saveMessage, setSaveMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
+    // Ollama Model Discovery state
+    const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+    const [isLoadingModels, setIsLoadingModels] = useState(false);
+    const [modelDiscoveryFailed, setModelDiscoveryFailed] = useState(false);
+
     // Initial load
     useEffect(() => {
         setMounted(true);
@@ -31,6 +37,36 @@ export default function SettingsPage() {
         setApiKey(stored.apiKey || "");
         setBaseUrl(stored.baseUrl || "");
     }, []);
+
+    // Ollama model discovery hook
+    useEffect(() => {
+        if (!mounted || provider !== "ollama") return;
+
+        const loadModels = async () => {
+            setIsLoadingModels(true);
+            try {
+                const models = await fetchOllamaModels(baseUrl);
+                setOllamaModels(models);
+                if (models.length === 0) {
+                    setModelDiscoveryFailed(true);
+                } else {
+                    setModelDiscoveryFailed(false);
+                    // Optionally set default model if current is empty
+                    if (!model && models.length > 0) {
+                        setModel(models[0]);
+                    }
+                }
+            } catch (error) {
+                setModelDiscoveryFailed(true);
+                setOllamaModels([]);
+            } finally {
+                setIsLoadingModels(false);
+            }
+        };
+
+        const timeoutId = setTimeout(loadModels, 600);
+        return () => clearTimeout(timeoutId);
+    }, [mounted, provider, baseUrl, model]);
 
     // Provider switch handler
     const handleProviderChange = (newProvider: AIProviderId) => {
@@ -136,21 +172,77 @@ export default function SettingsPage() {
 
                         {/* Model */}
                         <div>
-                            <label className="block text-sm font-medium text-zinc-300 mb-2">
-                                Model Name
-                            </label>
-                            <input
-                                type="text"
-                                value={model}
-                                onChange={(e) => setModel(e.target.value)}
-                                placeholder={provider === "openai" ? "gpt-4o" : "llama3"}
-                                className="w-full rounded-lg border border-zinc-800 bg-black px-4 py-3 text-white focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors"
-                            />
-                            {/* TODO: Implement dynamic Ollama model discovery here instead of text input */}
+                            <div className="flex items-center justify-between mb-2">
+                                <label className="block text-sm font-medium text-zinc-300">
+                                    Model Name
+                                </label>
+                                {provider === "ollama" && !isLoadingModels && !modelDiscoveryFailed && ollamaModels.length > 0 && (
+                                    // TODO: Add refresh/retry button for model discovery here in future
+                                    <button
+                                        type="button"
+                                        onClick={() => setModelDiscoveryFailed(true)}
+                                        className="text-xs text-zinc-500 hover:text-white transition-colors"
+                                    >
+                                        Enter manually instead
+                                    </button>
+                                )}
+                                {provider === "ollama" && !isLoadingModels && modelDiscoveryFailed && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            setModelDiscoveryFailed(false);
+                                            // Force a re-fetch by triggering state change if needed, but the effect uses debouncing on baseUrl
+                                            // Quick toggle hack:
+                                            setIsLoadingModels(true);
+                                            fetchOllamaModels(baseUrl).then(m => {
+                                                setOllamaModels(m);
+                                                setModelDiscoveryFailed(m.length === 0);
+                                                setIsLoadingModels(false);
+                                            });
+                                        }}
+                                        className="text-xs text-zinc-500 hover:text-white transition-colors"
+                                    >
+                                        Retry auto-discovery
+                                    </button>
+                                )}
+                            </div>
+
+                            {provider === "ollama" && !isLoadingModels && !modelDiscoveryFailed && ollamaModels.length > 0 ? (
+                                <select
+                                    value={model}
+                                    onChange={(e) => setModel(e.target.value)}
+                                    className="w-full rounded-lg border border-zinc-800 bg-black px-4 py-3 text-white focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors"
+                                >
+                                    {!ollamaModels.includes(model) && model && (
+                                        <option value={model}>{model} (Not Found Locally)</option>
+                                    )}
+                                    {ollamaModels.map(m => (
+                                        <option key={m} value={m}>{m}</option>
+                                    ))}
+                                </select>
+                            ) : (
+                                <input
+                                    type="text"
+                                    value={model}
+                                    onChange={(e) => setModel(e.target.value)}
+                                    placeholder={provider === "openai" ? "gpt-4o" : "llama3"}
+                                    className="w-full rounded-lg border border-zinc-800 bg-black px-4 py-3 text-white focus:border-white focus:outline-none focus:ring-1 focus:ring-white transition-colors disabled:opacity-50"
+                                    disabled={provider === "ollama" && isLoadingModels}
+                                />
+                            )}
+
                             {provider === "ollama" ? (
-                                <p className="mt-2 text-xs text-amber-500/80">
-                                    Note: Dynamic model discovery for Ollama will be added in a future update. Ensure the model is downloaded locally.
-                                </p>
+                                <div className="mt-2 text-xs">
+                                    {isLoadingModels ? (
+                                        <p className="text-zinc-500 animate-pulse flex items-center gap-2">
+                                            <span className="h-2 w-2 rounded-full bg-blue-500/50"></span> Discovering local models...
+                                        </p>
+                                    ) : modelDiscoveryFailed ? (
+                                        <p className="text-amber-500/80">Could not auto-detect local models on {baseUrl || "default port"}. You can still manually enter the model name to use.</p>
+                                    ) : ollamaModels.length > 0 ? (
+                                        <p className="text-zinc-500">Select an installed local model. {/* TODO: provider health check indicator here */}</p>
+                                    ) : null}
+                                </div>
                             ) : (
                                 <p className="mt-2 text-xs text-zinc-500">
                                     The specific model to request from the provider.
