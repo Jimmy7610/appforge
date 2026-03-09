@@ -879,51 +879,90 @@ function BlueprintContent() {
                 </div>
             </div>
 
-            {/* Improve Blueprint Controls */}
-            <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                <h3 className="text-lg font-semibold tracking-tight text-white mb-2 ml-1">Refine Architecture</h3>
-                <p className="text-sm text-zinc-400 mb-6 ml-1">Ask the AI to improve, restructure, or expand upon the current blueprint.</p>
+            {/* Redesigned Refine Architecture Card */}
+            <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-md">
+                <div className="px-6 py-6 sm:px-10 sm:py-8">
+                    <div className="mb-6">
+                        <h3 className="text-xl font-bold tracking-tight text-white mb-2">Refine Architecture</h3>
+                        <p className="text-sm text-zinc-400">
+                            Ask the AI to improve, restructure, or expand upon the current blueprint.
+                        </p>
+                    </div>
 
-                <div className="flex flex-col sm:flex-row items-stretch gap-4">
-                    <input
-                        type="text"
-                        value={instructions}
-                        onChange={(e) => setInstructions(e.target.value)}
-                        placeholder="e.g. Add authentication, Optimize for mobile users, Make it more scalable..."
-                        className="flex-1 rounded-xl bg-zinc-900/50 px-4 py-3 border border-white/10 text-zinc-200 outline-none focus:border-blue-500/50 transition-colors"
-                        onKeyDown={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                                e.preventDefault();
-                                handleImprove();
-                            }
-                        }}
-                    />
-                    <button
-                        onClick={handleImprove}
-                        disabled={isImproving}
-                        className="rounded-xl border border-blue-500/50 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 disabled:opacity-50 sm:w-auto shrink-0"
-                    >
-                        ⭐ Improve Blueprint
-                    </button>
+                    <div className="flex flex-col gap-6">
+                        {/* Row 1: Full-width Instruction Input */}
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={instructions}
+                                onChange={(e) => setInstructions(e.target.value)}
+                                placeholder="e.g. Add authentication, Optimize for mobile users, Make it more scalable..."
+                                className="w-full rounded-xl bg-zinc-900 border border-white/10 p-4 pr-12 text-sm text-zinc-200 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-zinc-600 shadow-inner"
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter" && !e.shiftKey) {
+                                        e.preventDefault();
+                                        handleImprove();
+                                    }
+                                }}
+                            />
+                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none">
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                </svg>
+                            </div>
+                        </div>
 
-                    <div className="w-px bg-white/10 hidden sm:block my-2"></div>
+                        {/* Row 2: Action Buttons */}
+                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-white/5">
+                            <div className="flex flex-wrap gap-3 order-2 lg:order-1">
+                                <button
+                                    onClick={handleGenerateDiagram}
+                                    disabled={isGeneratingDiagram}
+                                    className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
+                                >
+                                    {isGeneratingDiagram ? (
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25a2.25 2.25 0 01-2.25 2.25h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z" />
+                                        </svg>
+                                    )}
+                                    Generate Diagram
+                                </button>
+                                <button
+                                    onClick={handleExplain}
+                                    disabled={isExplaining}
+                                    className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
+                                >
+                                    {isExplaining ? (
+                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
+                                    ) : (
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                                        </svg>
+                                    )}
+                                    Explain Architecture
+                                </button>
+                            </div>
 
-                    <button
-                        onClick={handleGenerateDiagram}
-                        disabled={isGeneratingDiagram}
-                        className="rounded-xl border border-blue-500/50 bg-blue-900/20 px-6 py-3 text-sm font-semibold text-blue-300 transition-all hover:bg-blue-800/20 active:scale-95 disabled:opacity-50 sm:w-auto shrink-0 flex items-center justify-center gap-2"
-                    >
-                        {isGeneratingDiagram && <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-white mr-1"></span>}
-                        Generate Diagram
-                    </button>
-                    <button
-                        onClick={handleExplain}
-                        disabled={isExplaining}
-                        className="rounded-xl border border-zinc-500/50 bg-zinc-800/50 px-6 py-3 text-sm font-semibold text-zinc-300 transition-all hover:bg-zinc-700/50 active:scale-95 disabled:opacity-50 sm:w-auto shrink-0 flex items-center justify-center gap-2"
-                    >
-                        {isExplaining && <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white mr-1"></span>}
-                        Explain Architecture
-                    </button>
+                            <button
+                                onClick={handleImprove}
+                                disabled={isImproving}
+                                className="flex order-1 lg:order-2 min-w-[200px] w-full lg:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 h-11 px-8 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-[0.98] disabled:opacity-50"
+                            >
+                                {isImproving ? (
+                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+                                ) : (
+                                    <span className="flex items-center gap-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                            <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                                        </svg>
+                                        Improve Blueprint
+                                    </span>
+                                )}
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
