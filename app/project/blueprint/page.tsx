@@ -32,6 +32,7 @@ import {
     appendBlueprintVersion,
     restoreBlueprintVersion
 } from "@/lib/projects/versioning";
+import { EditableList } from "@/components/blueprint/editable-list";
 
 function BlueprintContent() {
     const searchParams = useSearchParams();
@@ -474,6 +475,34 @@ function BlueprintContent() {
         }
     };
 
+    const handleUpdateBlueprintField = (field: keyof Blueprint, values: string[]) => {
+        if (!blueprint) return;
+
+        const updatedBlueprint = { ...blueprint, [field]: values };
+        setBlueprint(updatedBlueprint);
+
+        if (idParam && project && activeVersionId) {
+            const stored = localStorage.getItem("appforge_blueprints");
+            if (stored) {
+                const blueprints = JSON.parse(stored);
+                const pIdx = blueprints.findIndex((p: any) => p.id === idParam);
+                if (pIdx !== -1) {
+                    const updatedVersions = project.versions?.map(v =>
+                        v.id === activeVersionId ? { ...v, blueprint: updatedBlueprint } : v
+                    );
+                    const updatedProject = {
+                        ...project,
+                        versions: updatedVersions,
+                        generatedBlueprint: activeVersionId === (project.versions?.[project.versions.length - 1]?.id) ? updatedBlueprint : project.generatedBlueprint
+                    };
+                    blueprints[pIdx] = updatedProject;
+                    localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
+                    setProject(updatedProject);
+                }
+            }
+        }
+    };
+
     const handleSave = () => {
         if (!blueprint) return;
 
@@ -885,619 +914,591 @@ function BlueprintContent() {
                 </div>
             </div>
 
-            {/* User Input Summary Card */}
-            <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                <div className="space-y-8">
-                    {idParam && (
-                        <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4 text-sm text-blue-200">
-                            You are editing a saved project preview. Saving will create a new blueprint entry.
-                        </div>
-                    )}
-                    {/* App Idea Section */}
-                    <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">App Idea</h3>
-                        <textarea
-                            value={idea || ""}
-                            onChange={(e) => setIdea(e.target.value)}
-                            className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[100px]"
-                            placeholder="Enter your app idea..."
-                        />
-                    </div>
-
-                    {/* Grid for Platform & Business Model */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                        <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Platform</h3>
-                            <select
-                                value={platform || ""}
-                                onChange={(e) => setPlatform(e.target.value)}
-                                className="w-full h-[56px] rounded-xl bg-zinc-900/50 px-4 border border-white/10 text-zinc-200 outline-none focus:border-white/30 transition-colors appearance-none font-sans"
-                            >
-                                <option value="" disabled>Select platform</option>
-                                <option value="web">Web App</option>
-                                <option value="mobile">Mobile App</option>
-                                <option value="desktop">Desktop App</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Business Model</h3>
-                            <select
-                                value={businessModel || ""}
-                                onChange={(e) => setBusinessModel(e.target.value)}
-                                className="w-full h-[56px] rounded-xl bg-zinc-900/50 px-4 border border-white/10 text-zinc-200 outline-none focus:border-white/30 transition-colors appearance-none font-sans"
-                            >
-                                <option value="" disabled>Select business model</option>
-                                <option value="free">Free Tool</option>
-                                <option value="saas">SaaS</option>
-                                <option value="marketplace">Marketplace</option>
-                                <option value="internal">Internal Tool</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    {/* Target Users */}
-                    <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Target Users</h3>
-                        <textarea
-                            value={targetUsers || ""}
-                            onChange={(e) => setTargetUsers(e.target.value)}
-                            className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[80px]"
-                            placeholder="Who will use this app?"
-                        />
-                    </div>
-
-                    {/* Core Feature */}
-                    <div>
-                        <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Core Feature</h3>
-                        <textarea
-                            value={coreFeature || ""}
-                            onChange={(e) => setCoreFeature(e.target.value)}
-                            className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[80px]"
-                            placeholder="What is the main feature?"
-                        />
-                    </div>
-                </div>
-            </div>
-
-            {/* Redesigned Refine Architecture Card */}
-            <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-md">
-                <div className="px-6 py-6 sm:px-10 sm:py-8">
-                    <div className="mb-6">
-                        <h3 className="text-xl font-bold tracking-tight text-white mb-2">Refine Architecture</h3>
-                        <p className="text-sm text-zinc-400">
-                            Ask the AI to improve, restructure, or expand upon the current blueprint.
-                        </p>
-                    </div>
-
-                    <div className="flex flex-col gap-6">
-                        {/* Row 1: Full-width Instruction Input */}
-                        <div className="relative">
-                            <input
-                                type="text"
-                                value={instructions}
-                                onChange={(e) => setInstructions(e.target.value)}
-                                placeholder="e.g. Add authentication, Optimize for mobile users, Make it more scalable..."
-                                className="w-full rounded-xl bg-zinc-900 border border-white/10 p-4 pr-12 text-sm text-zinc-200 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-zinc-600 shadow-inner"
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter" && !e.shiftKey) {
-                                        e.preventDefault();
-                                        handleImprove();
-                                    }
-                                }}
-                            />
-                            <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none">
-                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                </svg>
-                            </div>
-                        </div>
-
-                        {/* Refine Presets Integration */}
-                        <RefinePresets
-                            onSelectPreset={(instruction) => setInstructions(instruction)}
-                            currentInstruction={instructions}
-                            isApplying={isImproving || isGenerating || isExplaining || isGeneratingDiagram || isCritiquing || isSuggesting}
-                        />
-
-                        {/* Row 2: Action Buttons */}
-                        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-white/5">
-                            <div className="flex flex-wrap gap-3 order-2 lg:order-1">
-                                <button
-                                    onClick={handleGenerateDiagram}
-                                    disabled={isGeneratingDiagram}
-                                    className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
-                                >
-                                    {isGeneratingDiagram ? (
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
-                                    ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25a2.25 2.25 0 01-2.25 2.25h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z" />
-                                        </svg>
-                                    )}
-                                    Generate Diagram
-                                </button>
-                                <button
-                                    onClick={handleExplain}
-                                    disabled={isExplaining}
-                                    className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
-                                >
-                                    {isExplaining ? (
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
-                                    ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
-                                        </svg>
-                                    )}
-                                    Explain Architecture
-                                </button>
-                                <button
-                                    onClick={handleCritique}
-                                    disabled={isCritiquing}
-                                    className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
-                                >
-                                    {isCritiquing ? (
-                                        <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
-                                    ) : (
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                    )}
-                                    Critique Architecture
-                                </button>
+            {/* Split layout for Architecture Playground */}
+            <div className="xl:grid xl:grid-cols-12 xl:gap-8 flex flex-col gap-8 mb-8">
+                {/* LEFT COLUMN */}
+                <div className="xl:col-span-7 flex flex-col gap-8">
+                    {/* User Input Summary Card */}
+                    <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                        <div className="space-y-8">
+                            {idParam && (
+                                <div className="rounded-xl bg-blue-500/10 border border-blue-500/20 p-4 text-sm text-blue-200">
+                                    You are editing a saved project preview. Saving will create a new blueprint entry.
+                                </div>
+                            )}
+                            {/* App Idea Section */}
+                            <div>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">App Idea</h3>
+                                <textarea
+                                    value={idea || ""}
+                                    onChange={(e) => setIdea(e.target.value)}
+                                    className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[100px]"
+                                    placeholder="Enter your app idea..."
+                                />
                             </div>
 
-                            <button
-                                onClick={handleImprove}
-                                disabled={isImproving}
-                                className="flex order-1 lg:order-2 min-w-[200px] w-full lg:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 h-11 px-8 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-[0.98] disabled:opacity-50"
-                            >
-                                {isImproving ? (
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-                                ) : (
-                                    <span className="flex items-center gap-2">
-                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
-                                            <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
-                                        </svg>
-                                        Improve Blueprint
+                            {/* Grid for Platform & Business Model */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div>
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Platform</h3>
+                                    <select
+                                        value={platform || ""}
+                                        onChange={(e) => setPlatform(e.target.value)}
+                                        className="w-full h-[56px] rounded-xl bg-zinc-900/50 px-4 border border-white/10 text-zinc-200 outline-none focus:border-white/30 transition-colors appearance-none font-sans"
+                                    >
+                                        <option value="" disabled>Select platform</option>
+                                        <option value="web">Web App</option>
+                                        <option value="mobile">Mobile App</option>
+                                        <option value="desktop">Desktop App</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Business Model</h3>
+                                    <select
+                                        value={businessModel || ""}
+                                        onChange={(e) => setBusinessModel(e.target.value)}
+                                        className="w-full h-[56px] rounded-xl bg-zinc-900/50 px-4 border border-white/10 text-zinc-200 outline-none focus:border-white/30 transition-colors appearance-none font-sans"
+                                    >
+                                        <option value="" disabled>Select business model</option>
+                                        <option value="free">Free Tool</option>
+                                        <option value="saas">SaaS</option>
+                                        <option value="marketplace">Marketplace</option>
+                                        <option value="internal">Internal Tool</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            {/* Target Users */}
+                            <div>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Target Users</h3>
+                                <textarea
+                                    value={targetUsers || ""}
+                                    onChange={(e) => setTargetUsers(e.target.value)}
+                                    className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[80px]"
+                                    placeholder="Who will use this app?"
+                                />
+                            </div>
+
+                            {/* Core Feature */}
+                            <div>
+                                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3 block">Core Feature</h3>
+                                <textarea
+                                    value={coreFeature || ""}
+                                    onChange={(e) => setCoreFeature(e.target.value)}
+                                    className="w-full rounded-xl bg-zinc-900/50 p-4 border border-white/10 text-zinc-200 leading-relaxed outline-none focus:border-white/30 transition-colors resize-none min-h-[80px]"
+                                    placeholder="What is the main feature?"
+                                />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Editable Generated Architecture Card */}
+                    <div>
+                        <div className="flex items-center justify-between mb-4 px-2">
+                            <h2 className="text-xl font-semibold tracking-tight text-white">
+                                Generated Architecture
+                            </h2>
+                            {diagram && (
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] font-bold tracking-wider text-amber-500 bg-amber-500/10 px-2 py-1 rounded-md border border-amber-500/20">Modifications detect: reload diagram & critique</span>
+                                </div>
+                            )}
+                        </div>
+                        <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                            <div className="space-y-8">
+                                {/* Features */}
+                                <EditableList title="Features" items={blueprint.features || []} onItemsChange={items => handleUpdateBlueprintField('features', items)} />
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    {/* Tech Stack */}
+                                    <EditableList title="Tech Stack" items={blueprint.techStack || []} onItemsChange={items => handleUpdateBlueprintField('techStack', items)} />
+
+                                    {/* Database Tables */}
+                                    <EditableList title="Database Tables" items={blueprint.databaseTables || []} mono onItemsChange={items => handleUpdateBlueprintField('databaseTables', items)} />
+                                </div>
+
+                                {/* API Routes */}
+                                <EditableList title="API Routes" items={blueprint.apiRoutes || []} mono onItemsChange={items => handleUpdateBlueprintField('apiRoutes', items)} />
+
+                                {/* Development Roadmap */}
+                                <EditableList title="Development Roadmap" items={blueprint.roadmap || []} onItemsChange={items => handleUpdateBlueprintField('roadmap', items)} />
+                            </div>
+
+                            {/* AI Source Metadata */}
+                            {metadata && (
+                                <div className="mt-8 pt-6 border-t border-white/5 flex items-center justify-between">
+                                    <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
+                                        <span className={`h-1.5 w-1.5 rounded-full ${metadata.usedFallback || metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                                        Generated using: {metadata.sourceLabel}
                                     </span>
-                                )}
-                            </button>
+                                </div>
+                            )}
                         </div>
                     </div>
-                </div>
-            </div >
 
-            {/* Architecture Suggestions UI */}
-            {
-                suggestions && (
-                    <ArchitectureSuggestions
-                        result={suggestions}
-                        onSelectSuggestion={(instruction) => {
-                            setInstructions(instruction);
-                            window.scrollTo({ top: document.body.scrollHeight / 2, behavior: "smooth" }); // scroll slightly up towards refine panel
-                        }}
-                        isApplying={isImproving}
-                    />
-                )
-            }
+                </div> {/* End Left Column */}
 
-            {/* Diff Summary UI */}
-            {
-                diffResult && hasAnyChanges(diffResult) && (
-                    <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                        <h3 className="text-lg font-semibold tracking-tight text-white mb-2 ml-1">Changes from previous blueprint</h3>
-                        <p className="text-sm text-zinc-400 mb-6 ml-1">Here is a structural summary of the improvements.</p>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            {Object.entries(diffResult).map(([sectionKey, diff]) => {
-                                if (diff.added.length === 0 && diff.removed.length === 0) return null;
-                                const titleMap: Record<string, string> = {
-                                    features: "Features",
-                                    techStack: "Tech Stack",
-                                    databaseTables: "Database Tables",
-                                    apiRoutes: "API Routes",
-                                    roadmap: "Roadmap"
-                                };
-                                return (
-                                    <div key={sectionKey} className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
-                                        <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">{titleMap[sectionKey] || sectionKey}</h4>
-                                        <ul className="space-y-2 text-sm">
-                                            {diff.added.map((item: string, i: number) => (
-                                                <li key={`add-${i}`} className="flex items-start text-emerald-400">
-                                                    <span className="mr-2 font-mono mt-0.5">+</span>
-                                                    <span className="leading-relaxed">{item}</span>
-                                                </li>
-                                            ))}
-                                            {diff.removed.map((item: string, i: number) => (
-                                                <li key={`rm-${i}`} className="flex items-start text-rose-400 opacity-80">
-                                                    <span className="mr-2 font-mono mt-0.5">-</span>
-                                                    <span className="leading-relaxed line-through">{item}</span>
-                                                </li>
-                                            ))}
-                                        </ul>
+                {/* RIGHT COLUMN */}
+                <div className="xl:col-span-5 flex flex-col gap-8">
+
+                    {/* Redesigned Refine Architecture Card */}
+                    <div className="mb-8 overflow-hidden rounded-2xl border border-white/10 bg-white/5 shadow-2xl backdrop-blur-md">
+                        <div className="px-6 py-6 sm:px-10 sm:py-8">
+                            <div className="mb-6">
+                                <h3 className="text-xl font-bold tracking-tight text-white mb-2">Refine Architecture</h3>
+                                <p className="text-sm text-zinc-400">
+                                    Ask the AI to improve, restructure, or expand upon the current blueprint.
+                                </p>
+                            </div>
+
+                            <div className="flex flex-col gap-6">
+                                {/* Row 1: Full-width Instruction Input */}
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={instructions}
+                                        onChange={(e) => setInstructions(e.target.value)}
+                                        placeholder="e.g. Add authentication, Optimize for mobile users, Make it more scalable..."
+                                        className="w-full rounded-xl bg-zinc-900 border border-white/10 p-4 pr-12 text-sm text-zinc-200 outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 transition-all placeholder:text-zinc-600 shadow-inner"
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter" && !e.shiftKey) {
+                                                e.preventDefault();
+                                                handleImprove();
+                                            }
+                                        }}
+                                    />
+                                    <div className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 pointer-events-none">
+                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                        </svg>
                                     </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )
-            }
-            {
-                diffResult && !hasAnyChanges(diffResult) && (
-                    <div className="mb-8 rounded-2xl border border-zinc-500/20 bg-zinc-900/50 p-6 shadow-xl backdrop-blur-sm sm:p-8 flex items-center gap-3">
-                        <div className="h-2 w-2 rounded-full bg-zinc-500"></div>
-                        <p className="text-sm text-zinc-300">No structural changes detected from this improvement pass.</p>
-                    </div>
-                )
-            }
+                                </div>
 
-            {/* Architecture Explanation UI */}
-            {
-                explanation && (
-                    <div className="mb-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                        <h3 className="text-lg font-semibold tracking-tight text-emerald-400 mb-4 ml-1">Architecture Explanation</h3>
-                        <div className="rounded-xl bg-zinc-900/50 p-6 border border-emerald-500/10">
-                            <div className="prose prose-invert prose-emerald max-w-none prose-sm sm:prose-base leading-relaxed text-zinc-300">
-                                {explanation.explanation.split('\n').map((paragraph, i) => {
-                                    // Simple line break rendering instead of a full markdown parser to keep dependencies low
-                                    if (paragraph.trim().startsWith('- ')) {
-                                        return <li key={i} className="ml-4 list-disc">{paragraph.replace('- ', '')}</li>;
-                                    }
-                                    if (paragraph.trim().startsWith('**') && paragraph.trim().endsWith('**')) {
-                                        return <p key={i} className="font-semibold text-zinc-200 mt-4 mb-2">{paragraph.replace(/\*\*/g, '')}</p>;
-                                    }
-                                    if (paragraph.trim().startsWith('###')) {
-                                        return <h4 key={i} className="text-lg font-semibold text-emerald-300 mt-6 mb-3">{paragraph.replace(/###/g, '').trim()}</h4>;
-                                    }
-                                    return <p key={i} className="mb-4">{paragraph}</p>;
-                                })}
-                            </div>
-                        </div>
-                        {explanation.metadata && (
-                            <div className="mt-4 flex items-center justify-end">
-                                <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
-                                    <span className={`h-1.5 w-1.5 rounded-full ${explanation.metadata.usedFallback || explanation.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
-                                    Explained via: {explanation.metadata.sourceLabel}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                )
-            }
+                                {/* Refine Presets Integration */}
+                                <RefinePresets
+                                    onSelectPreset={(instruction) => setInstructions(instruction)}
+                                    currentInstruction={instructions}
+                                    isApplying={isImproving || isGenerating || isExplaining || isGeneratingDiagram || isCritiquing || isSuggesting}
+                                />
 
-            {/* Architecture Diagram UI */}
-            {
-                diagram && (
-                    <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                        <div className="mb-4 flex items-center justify-between ml-1">
-                            <h3 className="text-lg font-semibold tracking-tight text-blue-400">Architecture Diagram (Mermaid)</h3>
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={handleDownloadSVG}
-                                    disabled={!renderedSvg}
-                                    className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Download SVG
-                                </button>
-                                <button
-                                    onClick={handleDownloadPNG}
-                                    disabled={!renderedSvg}
-                                    className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    Download PNG
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(diagram.diagram);
-                                        window.alert("Mermaid code copied to clipboard!");
-                                    }}
-                                    className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
-                                >
-                                    Copy Mermaid
-                                </button>
-                            </div>
-                        </div>
+                                {/* Row 2: Action Buttons */}
+                                <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pt-4 border-t border-white/5">
+                                    <div className="flex flex-wrap gap-3 order-2 lg:order-1">
+                                        <button
+                                            onClick={handleGenerateDiagram}
+                                            disabled={isGeneratingDiagram}
+                                            className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
+                                        >
+                                            {isGeneratingDiagram ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25a2.25 2.25 0 01-2.25 2.25h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25h-2.25a2.25 2.25 0 01-2.25-2.25v-2.25z" />
+                                                </svg>
+                                            )}
+                                            {diagram ? "Regenerate Diagram (Live Sync)" : "Generate Diagram"}
+                                        </button>
+                                        <button
+                                            onClick={handleExplain}
+                                            disabled={isExplaining}
+                                            className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
+                                        >
+                                            {isExplaining ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 006-6v-1.5m-6 7.5a6 6 0 01-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 01-3-3V4.5a3 3 0 116 0v8.25a3 3 0 01-3 3z" />
+                                                </svg>
+                                            )}
+                                            Explain Architecture
+                                        </button>
+                                        <button
+                                            onClick={handleCritique}
+                                            disabled={isCritiquing}
+                                            className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
+                                        >
+                                            {isCritiquing ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            )}
+                                            Critique Architecture
+                                        </button>
+                                    </div>
 
-                        {/* Live Diagram Preview */}
-                        <div className="mb-6">
-                            <MermaidDiagram
-                                source={diagram.diagram}
-                                onRender={(svg) => setRenderedSvg(svg)}
-                            />
-                        </div>
-
-                        <div className="mb-3 flex items-center justify-between ml-1">
-                            <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Mermaid Source</h4>
-                            <span className="text-[10px] text-zinc-500 italic">Rendered via Mermaid.js</span>
-                        </div>
-
-                        <div className="rounded-xl bg-zinc-900/80 p-6 border border-blue-500/10 font-mono text-sm overflow-x-auto whitespace-pre leading-relaxed text-blue-100/90">
-                            {diagram.diagram}
-                        </div>
-
-
-                        <p className="mt-4 text-xs text-zinc-500 italic ml-1">
-                            Note: Exports are generated from the live rendered Mermaid preview above. You can also copy the source for external editors.
-                        </p>
-
-                        {/* TODO: transparent PNG export depth */}
-                        {/* TODO: higher resolution PNG export (custom scale) */}
-                        {/* TODO: PDF export integration */}
-                        {/* TODO: theme selection for exports */}
-                        {/* TODO: batch export (All formats) */}
-
-                        {diagram.metadata && (
-                            <div className="mt-4 flex items-center justify-end">
-                                <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
-                                    <span className={`h-1.5 w-1.5 rounded-full ${diagram.metadata.usedFallback || diagram.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
-                                    Generated via: {diagram.metadata.sourceLabel}
-                                </span>
-                            </div>
-                        )}
-                    </div>
-                )
-            }
-
-            {/* Architecture Critique UI */}
-            {
-                critique && (
-                    <div className="mb-8">
-                        <ArchitectureCritique critique={critique} />
-                    </div>
-                )
-            }
-
-            {/* Blueprint Versions UI */}
-            {
-                project && project.versions && project.versions.length > 0 && (
-                    <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                        <div className="mb-6">
-                            <h3 className="text-lg font-semibold tracking-tight text-white">Blueprint Versions</h3>
-                            <p className="text-sm text-zinc-500">Track and restore historical versions of this blueprint.</p>
-                        </div>
-
-                        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                            {[...project.versions].reverse().map((v) => (
-                                <div
-                                    key={v.id}
-                                    className={`relative flex flex-col rounded-xl border p-4 transition-all ${v.id === activeVersionId
-                                        ? "border-blue-500/50 bg-blue-500/5 ring-1 ring-blue-500/20"
-                                        : "border-white/10 bg-zinc-900/50 hover:border-white/20"
-                                        }`}
-                                >
-                                    <div className="mb-2 flex items-center justify-between">
-                                        <span className={`text-sm font-bold ${v.id === activeVersionId ? "text-blue-400" : "text-zinc-400"}`}>
-                                            {v.label}
-                                        </span>
-                                        {v.id === activeVersionId && (
-                                            <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-400 uppercase tracking-tighter">
-                                                Active
+                                    <button
+                                        onClick={handleImprove}
+                                        disabled={isImproving}
+                                        className="flex order-1 lg:order-2 min-w-[200px] w-full lg:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 h-11 px-8 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-[0.98] disabled:opacity-50"
+                                    >
+                                        {isImproving ? (
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+                                        ) : (
+                                            <span className="flex items-center gap-2">
+                                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4">
+                                                    <path fillRule="evenodd" d="M10.788 3.21c.448-1.077 1.976-1.077 2.424 0l2.082 5.007 5.404.433c1.164.093 1.636 1.545.749 2.305l-4.117 3.527 1.257 5.273c.271 1.136-.964 2.033-1.96 1.425L12 18.354 7.373 21.18c-.996.608-2.231-.29-1.96-1.425l1.257-5.273-4.117-3.527c-.887-.76-.415-2.212.749-2.305l5.404-.433 2.082-5.006z" clipRule="evenodd" />
+                                                </svg>
+                                                Improve Blueprint
                                             </span>
                                         )}
-                                    </div>
-                                    <span className="mb-4 text-[10px] text-zinc-600 font-medium">
-                                        {new Date(v.createdAt).toLocaleString()}
-                                    </span>
-
-                                    {v.id !== activeVersionId && (
-                                        <button
-                                            onClick={() => handleRestore(v.id)}
-                                            className="mt-auto w-full rounded-lg bg-white/5 py-2 text-xs font-semibold text-zinc-300 border border-white/10 hover:bg-white/10 hover:text-white transition-all active:scale-95"
-                                        >
-                                            Restore Version
-                                        </button>
-                                    )}
-                                    {v.id === activeVersionId && (
-                                        <div className="mt-auto py-2 text-center text-[10px] font-medium text-zinc-500 italic">
-                                            Currently viewing
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-
-                        {/* TODO: compare any two versions */}
-                        {/* TODO: version notes/comments */}
-                        {/* TODO: auto-save checkpoints */}
-                        {/* TODO: branching and forks */}
-                        {/* TODO: pin favorite versions */}
-                        {/* TODO: interactive timeline view */}
-                    </div>
-                )
-            }
-
-            {/* Ask the Architect (Chat) UI */}
-            {
-                blueprint && (
-                    <div className="mb-8 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                        <div className="mb-4">
-                            <h3 className="text-lg font-semibold tracking-tight text-indigo-400">Ask the Architect</h3>
-                            <p className="text-sm text-indigo-300/60">Ask follow-up questions about this blueprint architecture.</p>
-                        </div>
-
-                        {/* Chat History */}
-                        <div className="mb-6 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                            {chatMessages.length === 0 ? (
-                                <div className="flex flex-col items-center justify-center py-10 text-center opacity-50">
-                                    <div className="mb-3 rounded-full bg-indigo-500/10 p-4 text-indigo-400">
-                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8">
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.023c.09-.457.133-.925.133-1.393A8.814 8.814 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
-                                        </svg>
-                                    </div>
-                                    <p className="text-sm font-medium">No messages yet.</p>
-                                    <p className="mt-1 text-xs">How can I help refine your architecture?</p>
-                                </div>
-                            ) : (
-                                chatMessages.map((msg, i) => (
-                                    <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
-                                        <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${msg.role === "user"
-                                            ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/10"
-                                            : "bg-zinc-900 border border-indigo-500/10 text-zinc-300"
-                                            }`}>
-                                            <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
-                                        </div>
-                                    </div>
-                                ))
-                            )}
-                            {isChatting && (
-                                <div className="flex justify-start">
-                                    <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-zinc-900 border border-indigo-500/10 text-zinc-300">
-                                        <div className="flex gap-1">
-                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500"></span>
-                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.2s]"></span>
-                                            <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.4s]"></span>
-                                        </div>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Suggestion Chips */}
-                        {!isChatting && (
-                            <div className="mb-4 flex flex-wrap gap-2">
-                                {[
-                                    "Should this use Redis caching?",
-                                    "How would I scale this system?",
-                                    "How should authentication work?"
-                                ].map((tip, i) => (
-                                    <button
-                                        key={i}
-                                        onClick={() => handleChat(tip)}
-                                        className="rounded-full bg-indigo-500/5 border border-indigo-500/20 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all font-medium"
-                                    >
-                                        {tip}
                                     </button>
-                                ))}
+                                </div>
                             </div>
-                        )}
+                        </div>
+                    </div >
 
-                        {/* Chat Input */}
-                        <div className="relative">
-                            <input
-                                type="text"
-                                placeholder="Ask a question..."
-                                value={chatInput}
-                                onChange={(e) => setChatInput(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && !isChatting && handleChat()}
-                                className="w-full rounded-xl bg-zinc-900 border border-indigo-500/10 p-4 pr-12 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all"
+                    {/* Architecture Suggestions UI */}
+                    {
+                        suggestions && (
+                            <ArchitectureSuggestions
+                                result={suggestions}
+                                onSelectSuggestion={(instruction) => {
+                                    setInstructions(instruction);
+                                    window.scrollTo({ top: document.body.scrollHeight / 2, behavior: "smooth" }); // scroll slightly up towards refine panel
+                                }}
+                                isApplying={isImproving}
                             />
-                            <button
-                                onClick={() => !isChatting && handleChat()}
-                                disabled={isChatting || !chatInput.trim()}
-                                className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20"
-                            >
-                                {isChatting ? (
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-                                ) : (
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
-                                    </svg>
+                        )
+                    }
+
+                    {/* Diff Summary UI */}
+                    {
+                        diffResult && hasAnyChanges(diffResult) && (
+                            <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                                <h3 className="text-lg font-semibold tracking-tight text-white mb-2 ml-1">Changes from previous blueprint</h3>
+                                <p className="text-sm text-zinc-400 mb-6 ml-1">Here is a structural summary of the improvements.</p>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                    {Object.entries(diffResult).map(([sectionKey, diff]) => {
+                                        if (diff.added.length === 0 && diff.removed.length === 0) return null;
+                                        const titleMap: Record<string, string> = {
+                                            features: "Features",
+                                            techStack: "Tech Stack",
+                                            databaseTables: "Database Tables",
+                                            apiRoutes: "API Routes",
+                                            roadmap: "Roadmap"
+                                        };
+                                        return (
+                                            <div key={sectionKey} className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
+                                                <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">{titleMap[sectionKey] || sectionKey}</h4>
+                                                <ul className="space-y-2 text-sm">
+                                                    {diff.added.map((item: string, i: number) => (
+                                                        <li key={`add-${i}`} className="flex items-start text-emerald-400">
+                                                            <span className="mr-2 font-mono mt-0.5">+</span>
+                                                            <span className="leading-relaxed">{item}</span>
+                                                        </li>
+                                                    ))}
+                                                    {diff.removed.map((item: string, i: number) => (
+                                                        <li key={`rm-${i}`} className="flex items-start text-rose-400 opacity-80">
+                                                            <span className="mr-2 font-mono mt-0.5">-</span>
+                                                            <span className="leading-relaxed line-through">{item}</span>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        )
+                    }
+                    {
+                        diffResult && !hasAnyChanges(diffResult) && (
+                            <div className="mb-8 rounded-2xl border border-zinc-500/20 bg-zinc-900/50 p-6 shadow-xl backdrop-blur-sm sm:p-8 flex items-center gap-3">
+                                <div className="h-2 w-2 rounded-full bg-zinc-500"></div>
+                                <p className="text-sm text-zinc-300">No structural changes detected from this improvement pass.</p>
+                            </div>
+                        )
+                    }
+
+                    {/* Architecture Explanation UI */}
+                    {
+                        explanation && (
+                            <div className="mb-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                                <h3 className="text-lg font-semibold tracking-tight text-emerald-400 mb-4 ml-1">Architecture Explanation</h3>
+                                <div className="rounded-xl bg-zinc-900/50 p-6 border border-emerald-500/10">
+                                    <div className="prose prose-invert prose-emerald max-w-none prose-sm sm:prose-base leading-relaxed text-zinc-300">
+                                        {explanation.explanation.split('\n').map((paragraph, i) => {
+                                            // Simple line break rendering instead of a full markdown parser to keep dependencies low
+                                            if (paragraph.trim().startsWith('- ')) {
+                                                return <li key={i} className="ml-4 list-disc">{paragraph.replace('- ', '')}</li>;
+                                            }
+                                            if (paragraph.trim().startsWith('**') && paragraph.trim().endsWith('**')) {
+                                                return <p key={i} className="font-semibold text-zinc-200 mt-4 mb-2">{paragraph.replace(/\*\*/g, '')}</p>;
+                                            }
+                                            if (paragraph.trim().startsWith('###')) {
+                                                return <h4 key={i} className="text-lg font-semibold text-emerald-300 mt-6 mb-3">{paragraph.replace(/###/g, '').trim()}</h4>;
+                                            }
+                                            return <p key={i} className="mb-4">{paragraph}</p>;
+                                        })}
+                                    </div>
+                                </div>
+                                {explanation.metadata && (
+                                    <div className="mt-4 flex items-center justify-end">
+                                        <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
+                                            <span className={`h-1.5 w-1.5 rounded-full ${explanation.metadata.usedFallback || explanation.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                                            Explained via: {explanation.metadata.sourceLabel}
+                                        </span>
+                                    </div>
                                 )}
-                            </button>
-                        </div>
-
-                        {lastChatResult?.metadata && (
-                            <div className="mt-4 flex items-center justify-end">
-                                <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] font-medium text-zinc-500">
-                                    <span className={`h-1 w-1 rounded-full ${lastChatResult.metadata.usedFallback || lastChatResult.metadata.provider === "local" ? "bg-amber-500" : "bg-indigo-500"}`}></span>
-                                    Last reply via: {lastChatResult.metadata.sourceLabel}
-                                </span>
                             </div>
-                        )}
+                        )
+                    }
 
-                        {/* TODO: streaming replies */}
-                        {/* TODO: multi-turn persistence */}
-                        {/* TODO: architecture critique mode */}
-                        {/* TODO: code-level follow-up generation */}
-                        {/* TODO: section-specific chat */}
-                        {/* TODO: save chat with blueprint */}
-                    </div>
-                )
-            }
-
-            {/* Generated Architecture Card */}
-            <div>
-                <h2 className="text-xl font-semibold tracking-tight text-white mb-4 ml-2">
-                    Generated Architecture
-                </h2>
-                <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
-                    <div className="space-y-8">
-
-                        {/* Features */}
-                        <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Features</h3>
-                            <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
-                                <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                    {features.map((item: string, idx: number) => (
-                                        <li key={idx} className="leading-relaxed">{item}</li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            {/* Tech Stack */}
-                            <div>
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Tech Stack</h3>
-                                <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5 h-full">
-                                    <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                        {techStack.map((item: string, idx: number) => (
-                                            <li key={idx} className="leading-relaxed">{item}</li>
-                                        ))}
-                                    </ul>
+                    {/* Architecture Diagram UI */}
+                    {
+                        diagram && (
+                            <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                                <div className="mb-4 flex items-center justify-between ml-1">
+                                    <h3 className="text-lg font-semibold tracking-tight text-blue-400">Architecture Diagram (Mermaid)</h3>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={handleDownloadSVG}
+                                            disabled={!renderedSvg}
+                                            className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Download SVG
+                                        </button>
+                                        <button
+                                            onClick={handleDownloadPNG}
+                                            disabled={!renderedSvg}
+                                            className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                        >
+                                            Download PNG
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(diagram.diagram);
+                                                window.alert("Mermaid code copied to clipboard!");
+                                            }}
+                                            className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
+                                        >
+                                            Copy Mermaid
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Database Tables */}
-                            <div>
-                                <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Database Tables</h3>
-                                <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5 h-full">
-                                    <ul className="list-inside list-disc space-y-2 text-zinc-300 font-mono text-sm">
-                                        {databaseTables.map((item: string, idx: number) => (
-                                            <li key={idx} className="leading-relaxed">{item}</li>
-                                        ))}
-                                    </ul>
+                                {/* Live Diagram Preview */}
+                                <div className="mb-6">
+                                    <MermaidDiagram
+                                        source={diagram.diagram}
+                                        onRender={(svg) => setRenderedSvg(svg)}
+                                    />
                                 </div>
-                            </div>
-                        </div>
 
-                        {/* API Routes */}
-                        <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">API Routes</h3>
-                            <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
-                                <ul className="list-inside list-disc space-y-2 text-zinc-300 font-mono text-sm">
-                                    {apiRoutes.map((item: string, idx: number) => (
-                                        <li key={idx} className="leading-relaxed">{item}</li>
+                                <div className="mb-3 flex items-center justify-between ml-1">
+                                    <h4 className="text-xs font-semibold uppercase tracking-wider text-zinc-500">Mermaid Source</h4>
+                                    <span className="text-[10px] text-zinc-500 italic">Rendered via Mermaid.js</span>
+                                </div>
+
+                                <div className="rounded-xl bg-zinc-900/80 p-6 border border-blue-500/10 font-mono text-sm overflow-x-auto whitespace-pre leading-relaxed text-blue-100/90">
+                                    {diagram.diagram}
+                                </div>
+
+
+                                <p className="mt-4 text-xs text-zinc-500 italic ml-1">
+                                    Note: Exports are generated from the live rendered Mermaid preview above. You can also copy the source for external editors.
+                                </p>
+
+                                {/* TODO: transparent PNG export depth */}
+                                {/* TODO: higher resolution PNG export (custom scale) */}
+                                {/* TODO: PDF export integration */}
+                                {/* TODO: theme selection for exports */}
+                                {/* TODO: batch export (All formats) */}
+
+                                {diagram.metadata && (
+                                    <div className="mt-4 flex items-center justify-end">
+                                        <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
+                                            <span className={`h-1.5 w-1.5 rounded-full ${diagram.metadata.usedFallback || diagram.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                                            Generated via: {diagram.metadata.sourceLabel}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
+                        )
+                    }
+
+                    {/* Architecture Critique UI */}
+                    {
+                        critique && (
+                            <div className="mb-8">
+                                <ArchitectureCritique critique={critique} />
+                            </div>
+                        )
+                    }
+
+                    {/* Blueprint Versions UI */}
+                    {
+                        project && project.versions && project.versions.length > 0 && (
+                            <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-semibold tracking-tight text-white">Blueprint Versions</h3>
+                                    <p className="text-sm text-zinc-500">Track and restore historical versions of this blueprint.</p>
+                                </div>
+
+                                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                    {[...project.versions].reverse().map((v) => (
+                                        <div
+                                            key={v.id}
+                                            className={`relative flex flex-col rounded-xl border p-4 transition-all ${v.id === activeVersionId
+                                                ? "border-blue-500/50 bg-blue-500/5 ring-1 ring-blue-500/20"
+                                                : "border-white/10 bg-zinc-900/50 hover:border-white/20"
+                                                }`}
+                                        >
+                                            <div className="mb-2 flex items-center justify-between">
+                                                <span className={`text-sm font-bold ${v.id === activeVersionId ? "text-blue-400" : "text-zinc-400"}`}>
+                                                    {v.label}
+                                                </span>
+                                                {v.id === activeVersionId && (
+                                                    <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-400 uppercase tracking-tighter">
+                                                        Active
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <span className="mb-4 text-[10px] text-zinc-600 font-medium">
+                                                {new Date(v.createdAt).toLocaleString()}
+                                            </span>
+
+                                            {v.id !== activeVersionId && (
+                                                <button
+                                                    onClick={() => handleRestore(v.id)}
+                                                    className="mt-auto w-full rounded-lg bg-white/5 py-2 text-xs font-semibold text-zinc-300 border border-white/10 hover:bg-white/10 hover:text-white transition-all active:scale-95"
+                                                >
+                                                    Restore Version
+                                                </button>
+                                            )}
+                                            {v.id === activeVersionId && (
+                                                <div className="mt-auto py-2 text-center text-[10px] font-medium text-zinc-500 italic">
+                                                    Currently viewing
+                                                </div>
+                                            )}
+                                        </div>
                                     ))}
-                                </ul>
+                                </div>
+
+                                {/* TODO: compare any two versions */}
+                                {/* TODO: version notes/comments */}
+                                {/* TODO: auto-save checkpoints */}
+                                {/* TODO: branching and forks */}
+                                {/* TODO: pin favorite versions */}
+                                {/* TODO: interactive timeline view */}
                             </div>
-                        </div>
+                        )
+                    }
 
-                        {/* Development Roadmap */}
-                        <div>
-                            <h3 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">Development Roadmap</h3>
-                            <div className="rounded-xl bg-zinc-900/50 p-5 border border-white/5">
-                                <ul className="list-inside list-disc space-y-2 text-zinc-300">
-                                    {roadmap.map((item: string, idx: number) => (
-                                        <li key={idx} className="leading-relaxed">{item}</li>
-                                    ))}
-                                </ul>
+                    {/* Ask the Architect (Chat) UI */}
+                    {
+                        blueprint && (
+                            <div className="mb-8 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                                <div className="mb-4">
+                                    <h3 className="text-lg font-semibold tracking-tight text-indigo-400">Ask the Architect</h3>
+                                    <p className="text-sm text-indigo-300/60">Ask follow-up questions about this blueprint architecture.</p>
+                                </div>
+
+                                {/* Chat History */}
+                                <div className="mb-6 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {chatMessages.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center py-10 text-center opacity-50">
+                                            <div className="mb-3 rounded-full bg-indigo-500/10 p-4 text-indigo-400">
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.023c.09-.457.133-.925.133-1.393A8.814 8.814 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                                                </svg>
+                                            </div>
+                                            <p className="text-sm font-medium">No messages yet.</p>
+                                            <p className="mt-1 text-xs">How can I help refine your architecture?</p>
+                                        </div>
+                                    ) : (
+                                        chatMessages.map((msg, i) => (
+                                            <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                                                <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${msg.role === "user"
+                                                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/10"
+                                                    : "bg-zinc-900 border border-indigo-500/10 text-zinc-300"
+                                                    }`}>
+                                                    <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                                                </div>
+                                            </div>
+                                        ))
+                                    )}
+                                    {isChatting && (
+                                        <div className="flex justify-start">
+                                            <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-zinc-900 border border-indigo-500/10 text-zinc-300">
+                                                <div className="flex gap-1">
+                                                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500"></span>
+                                                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.2s]"></span>
+                                                    <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.4s]"></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Suggestion Chips */}
+                                {!isChatting && (
+                                    <div className="mb-4 flex flex-wrap gap-2">
+                                        {[
+                                            "Should this use Redis caching?",
+                                            "How would I scale this system?",
+                                            "How should authentication work?"
+                                        ].map((tip, i) => (
+                                            <button
+                                                key={i}
+                                                onClick={() => handleChat(tip)}
+                                                className="rounded-full bg-indigo-500/5 border border-indigo-500/20 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all font-medium"
+                                            >
+                                                {tip}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Chat Input */}
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        placeholder="Ask a question..."
+                                        value={chatInput}
+                                        onChange={(e) => setChatInput(e.target.value)}
+                                        onKeyDown={(e) => e.key === 'Enter' && !isChatting && handleChat()}
+                                        className="w-full rounded-xl bg-zinc-900 border border-indigo-500/10 p-4 pr-12 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all"
+                                    />
+                                    <button
+                                        onClick={() => !isChatting && handleChat()}
+                                        disabled={isChatting || !chatInput.trim()}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20"
+                                    >
+                                        {isChatting ? (
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                                            </svg>
+                                        )}
+                                    </button>
+                                </div>
+
+                                {lastChatResult?.metadata && (
+                                    <div className="mt-4 flex items-center justify-end">
+                                        <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] font-medium text-zinc-500">
+                                            <span className={`h-1 w-1 rounded-full ${lastChatResult.metadata.usedFallback || lastChatResult.metadata.provider === "local" ? "bg-amber-500" : "bg-indigo-500"}`}></span>
+                                            Last reply via: {lastChatResult.metadata.sourceLabel}
+                                        </span>
+                                    </div>
+                                )}
+
+                                {/* TODO: streaming replies */}
+                                {/* TODO: multi-turn persistence */}
+                                {/* TODO: architecture critique mode */}
+                                {/* TODO: code-level follow-up generation */}
+                                {/* TODO: section-specific chat */}
+                                {/* TODO: save chat with blueprint */}
                             </div>
-                        </div>
+                        )
+                    }
 
-                    </div>
-
-                    {/* AI Source Metadata */}
-                    {metadata && (
-                        <div className="mt-4 flex items-center gap-2">
-                            <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
-                                <span className={`h-1.5 w-1.5 rounded-full ${metadata.usedFallback || metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
-                                Generated using: {metadata.sourceLabel}
-                            </span>
-                        </div>
-                    )}
-                </div>
-            </div>
+                </div>{/* End Right Column */}
+            </div>{/* End Grid */}
 
             {/* Mobile Save Button */}
             <div className="mt-8 flex flex-col gap-3 sm:hidden">
