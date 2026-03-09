@@ -164,10 +164,9 @@ export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
 
 /**
  * Main entry point — resolves settings and provider, then delegates blueprint generation.
- * Synchronous callers (no provider) get the local blueprint directly.
- * Async callers (with provider) go through the provider registry.
+ * Async callers go through the provider registry.
  */
-export function generateBlueprint(input: BlueprintInput): Blueprint {
+export async function generateBlueprint(input: BlueprintInput): Promise<Blueprint> {
     // Resolve complete settings in this priority order:
     // 1. Explicit input overrides
     // 2. Stored AI settings from localStorage (if any)
@@ -184,13 +183,7 @@ export function generateBlueprint(input: BlueprintInput): Blueprint {
 
     // Resolve the provider instance
     const provider = getAIProvider(settings.provider);
-    // Settings are resolved and provider is ready — will be used once real API calls are wired
-    void provider;
-    void settings;
 
-    // TODO: When real API calls are wired, make this function async,
-    // pass settings (model, apiKey, baseUrl) to provider.generateBlueprint(),
-    // and update callers to await the result.
-
-    return generateLocalBlueprint(input);
+    const result = await provider.generateBlueprint(input, settings);
+    return result.blueprint;
 }

@@ -48,6 +48,6 @@ export type AIBlueprintGenerationResult = {
 export interface AIProvider {
     id: AIProviderId;
     label: string;
-    generateBlueprint(input: BlueprintInput): Promise<AIBlueprintGenerationResult>;
+    generateBlueprint(input: BlueprintInput, settings: AISettings): Promise<AIBlueprintGenerationResult>;
 }
 

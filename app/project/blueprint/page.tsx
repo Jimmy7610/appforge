@@ -34,6 +34,7 @@ function BlueprintContent() {
     const [coreFeature, setCoreFeature] = useState(getParam("coreFeature"));
     const [blueprint, setBlueprint] = useState<Blueprint | null>(null);
     const [projectNotFound, setProjectNotFound] = useState(false);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     useEffect(() => {
         setMounted(true);
@@ -58,18 +59,34 @@ function BlueprintContent() {
             }
             setProjectNotFound(true);
         } else {
-            setBlueprint(generateBlueprint({
+            setIsGenerating(true);
+            generateBlueprint({
                 idea: getParam("idea"),
                 platform: getParam("platform"),
                 businessModel: getParam("businessModel"),
                 targetUsers: getParam("targetUsers"),
                 coreFeature: getParam("coreFeature")
-            }));
+            }).then(bp => {
+                setBlueprint(bp);
+            }).catch(e => {
+                console.error("Failed to generate blueprint", e);
+                setProjectNotFound(true);
+            }).finally(() => {
+                setIsGenerating(false);
+            });
         }
     }, [idParam, searchParams]);
 
-    const handleRegenerate = () => {
-        setBlueprint(generateBlueprint({ idea, platform, businessModel, targetUsers, coreFeature }));
+    const handleRegenerate = async () => {
+        setIsGenerating(true);
+        try {
+            const bp = await generateBlueprint({ idea, platform, businessModel, targetUsers, coreFeature });
+            setBlueprint(bp);
+        } catch (e) {
+            console.error("Failed to regenerate blueprint", e);
+        } finally {
+            setIsGenerating(false);
+        }
     };
 
     const handleSave = () => {
@@ -282,8 +299,13 @@ function BlueprintContent() {
         }
     };
 
-    if (!mounted || (idParam && !projectNotFound && !blueprint)) {
-        return <div className="text-zinc-500 text-center py-20">Loading...</div>;
+    if (!mounted || isGenerating || (idParam && !projectNotFound && !blueprint)) {
+        return (
+            <div className="flex min-h-[50vh] flex-col items-center justify-center space-y-4">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-800 border-t-white"></div>
+                <div className="text-zinc-400">{isGenerating ? "Generating your blueprint..." : "Loading..."}</div>
+            </div>
+        );
     }
 
     if (projectNotFound) {
