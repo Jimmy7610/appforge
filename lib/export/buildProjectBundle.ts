@@ -1,13 +1,10 @@
 import { ExportInput } from "./buildStarterPack";
+import { detectFeatures } from "./detectFeatures";
 
 export function buildProjectBundle(input: ExportInput) {
     const { idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap } = input;
 
-    // Feature detection helpers
-    const allText = [...blueprint.features, ...blueprint.databaseTables].map(s => s.toLowerCase()).join(" ");
-    const hasProfile = /auth|profile|user.?setting|account|login|signup|sign.?up/.test(allText);
-    const hasActivity = /activity|log|notification|event|feed|timeline/.test(allText);
-    const hasTeam = /team|collaborat|member|group|organization|workspace/.test(allText);
+    const { hasProfile, hasActivity, hasTeam } = detectFeatures(blueprint.features, blueprint.databaseTables);
 
     const platformLabel = platform ? displayMap[platform] || platform : "Web App";
     const modelLabel = businessModel ? displayMap[businessModel] || businessModel : "SaaS";
