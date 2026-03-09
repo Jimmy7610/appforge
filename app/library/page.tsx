@@ -4,16 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-type Project = {
-    id: string;
-    createdAt: string;
-    idea: string;
-    platform: string;
-    businessModel: string;
-    targetUsers: string;
-    coreFeature: string;
-    generatedBlueprint: any;
-};
+import { Project } from "@/lib/ai/types";
 
 export default function LibraryPage() {
     const router = useRouter();
@@ -174,9 +165,16 @@ export default function LibraryPage() {
                                     {project.coreFeature}
                                 </p>
                                 <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-6">
-                                    <span className="text-xs font-medium text-zinc-600">
-                                        {new Date(project.createdAt).toLocaleDateString()}
-                                    </span>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs font-medium text-zinc-600">
+                                            {new Date(project.createdAt).toLocaleDateString()}
+                                        </span>
+                                        {project.versions && project.versions.length > 0 && (
+                                            <span className="flex items-center gap-1 rounded-full bg-zinc-900 px-2 py-0.5 text-[10px] font-bold text-zinc-500 border border-white/5">
+                                                {project.versions.length} versions
+                                            </span>
+                                        )}
+                                    </div>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={(e) => handleDuplicate(project, e)}
@@ -209,7 +207,7 @@ export default function LibraryPage() {
                                 </div>
 
                                 {/* Hover Indicator */}
-                                <div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-white opacity-0 group-hover:opacity-100 group-hover:scale-125 transition-all"></div>
+                                < div className="absolute top-4 right-4 h-2 w-2 rounded-full bg-white opacity-0 group-hover:opacity-100 group-hover:scale-125 transition-all" ></div>
                             </div>
                         ))}
                     </div>
@@ -229,8 +227,9 @@ export default function LibraryPage() {
                             Create Your First Project
                         </Link>
                     </div>
-                )}
-            </div>
+                )
+                }
+            </div >
 
             {/* TODO: Features for v2 */}
             {/* 
@@ -240,6 +239,6 @@ export default function LibraryPage() {
                 - blueprint version history 
                 - public blueprint publishing 
             */}
-        </main>
+        </main >
     );
 }

@@ -17,6 +17,13 @@ import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
 import { buildShareBlueprint } from "@/lib/export/buildShareBlueprint";
 import { buildFullProject } from "@/lib/export/buildFullProject";
 import { MermaidDiagram } from "@/components/blueprint/mermaid-diagram";
+import { Project, BlueprintVersion } from "@/lib/ai/types";
+import {
+    normalizeProjectVersions,
+    createBlueprintVersion,
+    appendBlueprintVersion,
+    restoreBlueprintVersion
+} from "@/lib/projects/versioning";
 
 function BlueprintContent() {
     const searchParams = useSearchParams();
@@ -45,6 +52,11 @@ function BlueprintContent() {
     const [projectNotFound, setProjectNotFound] = useState(false);
     const [isGenerating, setIsGenerating] = useState(false);
     const [importSuccess, setImportSuccess] = useState(false);
+
+    // Versioning state
+    const [project, setProject] = useState<Project | null>(null);
+    const [activeVersionId, setActiveVersionId] = useState<string | null>(null);
+    const [restoreSuccess, setRestoreSuccess] = useState(false);
 
     // Improve UI state
     const [isImproving, setIsImproving] = useState(false);
@@ -77,12 +89,28 @@ function BlueprintContent() {
                     const blueprints = JSON.parse(stored);
                     const foundProject = blueprints.find((p: any) => p.id === idParam);
                     if (foundProject) {
-                        setIdea(foundProject.idea);
-                        setPlatform(foundProject.platform);
-                        setBusinessModel(foundProject.businessModel);
-                        setTargetUsers(foundProject.targetUsers);
-                        setCoreFeature(foundProject.coreFeature);
-                        setBlueprint(foundProject.generatedBlueprint);
+                        const normalizedProject = normalizeProjectVersions(foundProject);
+                        setProject(normalizedProject);
+
+                        setIdea(normalizedProject.idea);
+                        setPlatform(normalizedProject.platform);
+                        setBusinessModel(normalizedProject.businessModel);
+                        setTargetUsers(normalizedProject.targetUsers);
+                        setCoreFeature(normalizedProject.coreFeature);
+
+                        // Set the latest version as active
+                        const latestVersion = normalizedProject.versions![normalizedProject.versions!.length - 1];
+                        setBlueprint(latestVersion.blueprint);
+                        setActiveVersionId(latestVersion.id);
+
+                        // Restore auxiliary state from the latest version
+                        if (latestVersion.explanation) {
+                            setExplanation({ explanation: latestVersion.explanation, metadata: latestVersion.metadata || undefined });
+                        }
+                        if (latestVersion.diagram) {
+                            setDiagram({ diagram: latestVersion.diagram, metadata: latestVersion.metadata || undefined });
+                        }
+
                         return;
                     }
                 }
@@ -170,6 +198,27 @@ function BlueprintContent() {
             setExplanation(null); // Clear previous explanation since architecture changed
             setDiagram(null); // Clear previous diagram since architecture changed
             setRenderedSvg(""); // Clear previous rendered SVG
+
+            // Handle Versioning
+            if (project) {
+                const newVersion = createBlueprintVersion(project, bp, null, null, bp.metadata || null);
+                const updatedProject = appendBlueprintVersion(project, newVersion);
+                setProject(updatedProject);
+                setActiveVersionId(newVersion.id);
+
+                // Auto-update if it's a saved project
+                if (idParam) {
+                    const stored = localStorage.getItem("appforge_blueprints");
+                    if (stored) {
+                        const blueprints = JSON.parse(stored);
+                        const idx = blueprints.findIndex((p: any) => p.id === idParam);
+                        if (idx !== -1) {
+                            blueprints[idx] = updatedProject;
+                            localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
+                        }
+                    }
+                }
+            }
         } catch (e) {
             console.error("Failed to improve blueprint", e);
             window.alert("Failed to improve blueprint. Check console for details.");
@@ -177,6 +226,44 @@ function BlueprintContent() {
             setIsImproving(false);
             setChatMessages([]);
             setLastChatResult(null);
+        }
+    };
+
+    const handleRestore = (versionId: string) => {
+        if (!project) return;
+        const version = restoreBlueprintVersion(versionId, project);
+        if (!version) return;
+
+        setBlueprint(version.blueprint);
+        setExplanation(version.explanation ? { explanation: version.explanation, metadata: version.metadata || undefined } : null);
+        setDiagram(version.diagram ? { diagram: version.diagram, metadata: version.metadata || undefined } : null);
+        setRenderedSvg("");
+        setActiveVersionId(version.id);
+
+        // Update inputs if they are different (v1 assumes same inputs for now but let's be safe)
+        // In v1, we mostly care about the blueprint content
+
+        setRestoreSuccess(true);
+        setTimeout(() => setRestoreSuccess(false), 3000);
+
+        // Auto-update localStorage if it's a saved project
+        // Note: we don't change the version history, we just change which one is "current"
+        // in terms of the generatedBlueprint field for compatibility
+        if (idParam) {
+            const stored = localStorage.getItem("appforge_blueprints");
+            if (stored) {
+                const blueprints = JSON.parse(stored);
+                const idx = blueprints.findIndex((p: any) => p.id === idParam);
+                if (idx !== -1) {
+                    const updatedProject: Project = {
+                        ...project,
+                        generatedBlueprint: version.blueprint
+                    };
+                    blueprints[idx] = updatedProject;
+                    localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
+                    setProject(updatedProject);
+                }
+            }
         }
     };
 
@@ -306,7 +393,9 @@ function BlueprintContent() {
     };
 
     const handleSave = () => {
-        const newProject = {
+        if (!blueprint) return;
+
+        const baseProject: Project = {
             id: crypto.randomUUID(),
             createdAt: new Date().toISOString(),
             idea: idea || "",
@@ -316,6 +405,8 @@ function BlueprintContent() {
             coreFeature: coreFeature || "",
             generatedBlueprint: blueprint
         };
+
+        const newProject = normalizeProjectVersions(baseProject);
 
         try {
             const stored = localStorage.getItem("appforge_blueprints");
@@ -335,7 +426,7 @@ function BlueprintContent() {
     };
 
     const handleUpdate = () => {
-        if (!idParam) return;
+        if (!idParam || !blueprint) return;
 
         try {
             const stored = localStorage.getItem("appforge_blueprints");
@@ -353,7 +444,15 @@ function BlueprintContent() {
             }
 
             const existing = blueprints[index];
-            const updatedProject = {
+            const updatedProject: Project = project ? {
+                ...project,
+                idea: idea || "",
+                platform: platform || "",
+                businessModel: businessModel || "",
+                targetUsers: targetUsers || "",
+                coreFeature: coreFeature || "",
+                generatedBlueprint: blueprint
+            } : normalizeProjectVersions({
                 ...existing,
                 idea: idea || "",
                 platform: platform || "",
@@ -361,10 +460,11 @@ function BlueprintContent() {
                 targetUsers: targetUsers || "",
                 coreFeature: coreFeature || "",
                 generatedBlueprint: blueprint
-            };
+            });
 
             blueprints[index] = updatedProject;
             localStorage.setItem("appforge_blueprints", JSON.stringify(blueprints));
+            setProject(updatedProject);
 
             window.alert("Project updated successfully.");
         } catch (e) {
@@ -605,6 +705,16 @@ function BlueprintContent() {
                         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     Blueprint imported successfully
+                </div>
+            )}
+
+            {/* Restore Success Toast */}
+            {restoreSuccess && (
+                <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 rounded-full bg-blue-500/10 border border-blue-500/20 px-6 py-2.5 shadow-xl backdrop-blur-md text-sm font-semibold text-blue-400 animate-in fade-in slide-in-from-top-4 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Restored blueprint version successfully
                 </div>
             )}
 
@@ -962,6 +1072,63 @@ function BlueprintContent() {
                             </span>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Blueprint Versions UI */}
+            {project && project.versions && project.versions.length > 0 && (
+                <div className="mb-8 rounded-2xl border border-white/10 bg-white/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                    <div className="mb-6">
+                        <h3 className="text-lg font-semibold tracking-tight text-white">Blueprint Versions</h3>
+                        <p className="text-sm text-zinc-500">Track and restore historical versions of this blueprint.</p>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                        {[...project.versions].reverse().map((v) => (
+                            <div
+                                key={v.id}
+                                className={`relative flex flex-col rounded-xl border p-4 transition-all ${v.id === activeVersionId
+                                    ? "border-blue-500/50 bg-blue-500/5 ring-1 ring-blue-500/20"
+                                    : "border-white/10 bg-zinc-900/50 hover:border-white/20"
+                                    }`}
+                            >
+                                <div className="mb-2 flex items-center justify-between">
+                                    <span className={`text-sm font-bold ${v.id === activeVersionId ? "text-blue-400" : "text-zinc-400"}`}>
+                                        {v.label}
+                                    </span>
+                                    {v.id === activeVersionId && (
+                                        <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-[10px] font-bold text-blue-400 uppercase tracking-tighter">
+                                            Active
+                                        </span>
+                                    )}
+                                </div>
+                                <span className="mb-4 text-[10px] text-zinc-600 font-medium">
+                                    {new Date(v.createdAt).toLocaleString()}
+                                </span>
+
+                                {v.id !== activeVersionId && (
+                                    <button
+                                        onClick={() => handleRestore(v.id)}
+                                        className="mt-auto w-full rounded-lg bg-white/5 py-2 text-xs font-semibold text-zinc-300 border border-white/10 hover:bg-white/10 hover:text-white transition-all active:scale-95"
+                                    >
+                                        Restore Version
+                                    </button>
+                                )}
+                                {v.id === activeVersionId && (
+                                    <div className="mt-auto py-2 text-center text-[10px] font-medium text-zinc-500 italic">
+                                        Currently viewing
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* TODO: compare any two versions */}
+                    {/* TODO: version notes/comments */}
+                    {/* TODO: auto-save checkpoints */}
+                    {/* TODO: branching and forks */}
+                    {/* TODO: pin favorite versions */}
+                    {/* TODO: interactive timeline view */}
                 </div>
             )}
 

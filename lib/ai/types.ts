@@ -43,6 +43,29 @@ export type Blueprint = {
     metadata?: AIGenerationMetadata;
 };
 
+// --- Versioning types ---
+export type BlueprintVersion = {
+    id: string;
+    label: string;
+    createdAt: string;
+    blueprint: Blueprint;
+    explanation?: string | null;
+    diagram?: string | null;
+    metadata?: AIGenerationMetadata | null;
+};
+
+export type Project = {
+    id: string;
+    createdAt: string;
+    idea: string;
+    platform: string;
+    businessModel: string;
+    targetUsers: string;
+    coreFeature: string;
+    generatedBlueprint: Blueprint;
+    versions?: BlueprintVersion[];
+};
+
 import type { AITaskId, AITaskContext, AITaskHandler, AITaskResultMap } from "./tasks/types";
 
 // --- Provider interface ---
