@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState, useRef } from "react";
 import { Blueprint } from "@/lib/ai/generateBlueprint";
+import { ArrowRight, Trash2, Search, Filter, FolderPlus, Rocket, ArrowUpDown, Play, X, Settings } from "lucide-react";
 
 type SavedProject = {
     id: string;
@@ -186,6 +187,13 @@ export default function Dashboard() {
                         Dashboard
                     </h1>
                     <div className="flex items-center gap-3">
+                        <Link
+                            href="/settings"
+                            className="flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-white/5 text-zinc-400 transition-all hover:bg-white/10 hover:text-white active:scale-95"
+                            title="Settings"
+                        >
+                            <Settings className="h-5 w-5" />
+                        </Link>
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             className="rounded-full border border-white/20 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95"

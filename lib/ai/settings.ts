@@ -1,5 +1,6 @@
 import type { AIProviderId, AISettings } from "./types";
 import { providerDefaults, DEFAULT_PROVIDER } from "./defaults";
+export { providerDefaults, DEFAULT_PROVIDER };
 
 // TODO: Add persistent user settings (localStorage or DB)
 // TODO: Add environment-based secret injection for API keys
