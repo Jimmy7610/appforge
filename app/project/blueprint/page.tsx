@@ -12,6 +12,7 @@ import { diffBlueprints, type BlueprintDiff, hasAnyChanges } from "@/lib/ai/diff
 import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
 import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
 import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
+import { buildShareBlueprint } from "@/lib/export/buildShareBlueprint";
 
 function BlueprintContent() {
     const searchParams = useSearchParams();
@@ -237,6 +238,27 @@ function BlueprintContent() {
         URL.revokeObjectURL(url);
     };
 
+    const handleShareExport = () => {
+        if (!blueprint) return;
+
+        const sharePayload = buildShareBlueprint({
+            idea,
+            inputs: { platform, businessModel, targetUsers, coreFeature },
+            blueprint,
+            explanation: explanation || undefined
+        });
+
+        const blob = new Blob([JSON.stringify(sharePayload, null, 2)], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "appforge-blueprint-share.json";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
     const handleExportMarkdown = () => {
         if (!blueprint) return;
         const files = buildMarkdownFiles({ idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap });
@@ -407,6 +429,17 @@ function BlueprintContent() {
                         </p>
                     </div>
                     <div className="flex items-center gap-3 flex-wrap justify-end">
+                        <div className="hidden xl:block relative group">
+                            <button
+                                onClick={handleShareExport}
+                                className="rounded-full border border-blue-500/30 bg-blue-500/10 px-6 py-2.5 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95"
+                            >
+                                Share Blueprint
+                            </button>
+                            <div className="absolute -bottom-10 right-0 w-max max-w-xs scale-0 rounded bg-zinc-800 px-3 py-2 text-xs text-white opacity-0 transition-all group-hover:scale-100 group-hover:opacity-100 pointer-events-none shadow-xl z-10 border border-white/10">
+                                Export a shareable blueprint file that can be imported into another AppForge instance.
+                            </div>
+                        </div>
                         <button
                             onClick={handleExportZip}
                             className="hidden rounded-full border border-white/20 bg-white/5 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95 xl:block"
@@ -730,6 +763,15 @@ function BlueprintContent() {
 
             {/* Mobile Save Button */}
             <div className="mt-8 flex flex-col gap-3 sm:hidden">
+                <button
+                    onClick={handleShareExport}
+                    className="w-full rounded-full border border-blue-500/30 bg-blue-500/10 px-8 py-4 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95"
+                >
+                    Share Blueprint
+                </button>
+                <div className="text-center w-full text-xs text-zinc-500 max-w-xs mx-auto mb-2">
+                    Export a shareable blueprint file that can be imported into another AppForge instance.
+                </div>
                 <button
                     onClick={handleExportZip}
                     className="w-full rounded-full border border-white/20 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95"
