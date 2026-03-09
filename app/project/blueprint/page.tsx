@@ -8,7 +8,8 @@ import { generateBlueprint, type Blueprint } from "@/lib/ai/generateBlueprint";
 import { improveBlueprint } from "@/lib/ai/improveBlueprint";
 import { explainBlueprint } from "@/lib/ai/explainBlueprint";
 import { generateArchitectureDiagram } from "@/lib/ai/generateArchitectureDiagram";
-import type { ExplainBlueprintResult, GenerateArchitectureDiagramResult } from "@/lib/ai/tasks/types";
+import { architectureChat } from "@/lib/ai/architectureChat";
+import type { ExplainBlueprintResult, GenerateArchitectureDiagramResult, ArchitectureChatMessage, ArchitectureChatResult } from "@/lib/ai/tasks/types";
 import { diffBlueprints, type BlueprintDiff, hasAnyChanges } from "@/lib/ai/diffBlueprints";
 import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
 import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
@@ -57,6 +58,12 @@ function BlueprintContent() {
     // Diagram UI state
     const [isGeneratingDiagram, setIsGeneratingDiagram] = useState(false);
     const [diagram, setDiagram] = useState<GenerateArchitectureDiagramResult | null>(null);
+
+    // Chat UI state
+    const [isChatting, setIsChatting] = useState(false);
+    const [chatMessages, setChatMessages] = useState<ArchitectureChatMessage[]>([]);
+    const [chatInput, setChatInput] = useState("");
+    const [lastChatResult, setLastChatResult] = useState<ArchitectureChatResult | null>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -140,6 +147,8 @@ function BlueprintContent() {
             console.error("Failed to regenerate blueprint", e);
         } finally {
             setIsGenerating(false);
+            setChatMessages([]);
+            setLastChatResult(null);
         }
     };
 
@@ -163,6 +172,8 @@ function BlueprintContent() {
             window.alert("Failed to improve blueprint. Check console for details.");
         } finally {
             setIsImproving(false);
+            setChatMessages([]);
+            setLastChatResult(null);
         }
     };
 
@@ -197,6 +208,38 @@ function BlueprintContent() {
             window.alert("Failed to generate architecture diagram. Check console for details.");
         } finally {
             setIsGeneratingDiagram(false);
+        }
+    };
+
+    const handleChat = async (overrideInput?: string) => {
+        const inputToUser = overrideInput || chatInput;
+        if (!blueprint || !inputToUser.trim()) return;
+
+        const userMsg: ArchitectureChatMessage = { role: "user", content: inputToUser };
+        const newMessages = [...chatMessages, userMsg];
+
+        setChatMessages(newMessages);
+        setChatInput("");
+        setIsChatting(true);
+
+        try {
+            const result = await architectureChat({
+                originalInput: { idea, platform, businessModel, targetUsers, coreFeature },
+                currentBlueprint: blueprint,
+                explanation: explanation?.explanation,
+                diagram: diagram?.diagram,
+                messages: newMessages
+            });
+
+            const assistantMsg: ArchitectureChatMessage = { role: "assistant", content: result.reply };
+            setChatMessages(prev => [...prev, assistantMsg]);
+            setLastChatResult(result);
+        } catch (e) {
+            console.error("Failed to chat with architect", e);
+            const errorMsg: ArchitectureChatMessage = { role: "assistant", content: "I'm sorry, I encountered an error while processing your request. Please try again." };
+            setChatMessages(prev => [...prev, errorMsg]);
+        } finally {
+            setIsChatting(false);
         }
     };
 
@@ -834,6 +877,113 @@ function BlueprintContent() {
                             </span>
                         </div>
                     )}
+                </div>
+            )}
+
+            {/* Ask the Architect (Chat) UI */}
+            {blueprint && (
+                <div className="mb-8 rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                    <div className="mb-4">
+                        <h3 className="text-lg font-semibold tracking-tight text-indigo-400">Ask the Architect</h3>
+                        <p className="text-sm text-indigo-300/60">Ask follow-up questions about this blueprint architecture.</p>
+                    </div>
+
+                    {/* Chat History */}
+                    <div className="mb-6 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                        {chatMessages.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-10 text-center opacity-50">
+                                <div className="mb-3 rounded-full bg-indigo-500/10 p-4 text-indigo-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="h-8 w-8">
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.023c.09-.457.133-.925.133-1.393A8.814 8.814 0 013 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
+                                    </svg>
+                                </div>
+                                <p className="text-sm font-medium">No messages yet.</p>
+                                <p className="mt-1 text-xs">How can I help refine your architecture?</p>
+                            </div>
+                        ) : (
+                            chatMessages.map((msg, i) => (
+                                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                                    <div className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm ${msg.role === "user"
+                                        ? "bg-indigo-600 text-white shadow-lg shadow-indigo-500/10"
+                                        : "bg-zinc-900 border border-indigo-500/10 text-zinc-300"
+                                        }`}>
+                                        <p className="whitespace-pre-wrap leading-relaxed">{msg.content}</p>
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                        {isChatting && (
+                            <div className="flex justify-start">
+                                <div className="max-w-[85%] rounded-2xl px-4 py-3 text-sm bg-zinc-900 border border-indigo-500/10 text-zinc-300">
+                                    <div className="flex gap-1">
+                                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500"></span>
+                                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.2s]"></span>
+                                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-indigo-500 [animation-delay:0.4s]"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Suggestion Chips */}
+                    {!isChatting && (
+                        <div className="mb-4 flex flex-wrap gap-2">
+                            {[
+                                "Should this use Redis caching?",
+                                "How would I scale this system?",
+                                "How should authentication work?"
+                            ].map((tip, i) => (
+                                <button
+                                    key={i}
+                                    onClick={() => handleChat(tip)}
+                                    className="rounded-full bg-indigo-500/5 border border-indigo-500/20 px-3 py-1.5 text-xs text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-500/30 transition-all font-medium"
+                                >
+                                    {tip}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Chat Input */}
+                    <div className="relative">
+                        <input
+                            type="text"
+                            placeholder="Ask a question..."
+                            value={chatInput}
+                            onChange={(e) => setChatInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && !isChatting && handleChat()}
+                            className="w-full rounded-xl bg-zinc-900 border border-indigo-500/10 p-4 pr-12 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-indigo-500/30 transition-all"
+                        />
+                        <button
+                            onClick={() => !isChatting && handleChat()}
+                            disabled={isChatting || !chatInput.trim()}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 rounded-lg bg-indigo-600 p-2 text-white hover:bg-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/20"
+                        >
+                            {isChatting ? (
+                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+                            ) : (
+                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="h-4 w-4">
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+                                </svg>
+                            )}
+                        </button>
+                    </div>
+
+                    {lastChatResult?.metadata && (
+                        <div className="mt-4 flex items-center justify-end">
+                            <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-[10px] font-medium text-zinc-500">
+                                <span className={`h-1 w-1 rounded-full ${lastChatResult.metadata.usedFallback || lastChatResult.metadata.provider === "local" ? "bg-amber-500" : "bg-indigo-500"}`}></span>
+                                Last reply via: {lastChatResult.metadata.sourceLabel}
+                            </span>
+                        </div>
+                    )}
+
+                    {/* TODO: streaming replies */}
+                    {/* TODO: multi-turn persistence */}
+                    {/* TODO: architecture critique mode */}
+                    {/* TODO: code-level follow-up generation */}
+                    {/* TODO: section-specific chat */}
+                    {/* TODO: save chat with blueprint */}
                 </div>
             )}
 
