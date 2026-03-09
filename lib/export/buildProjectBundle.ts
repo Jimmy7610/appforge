@@ -3,6 +3,7 @@ import { detectFeatures } from "./detectFeatures";
 import { buildFeatureModules } from "./buildFeatureModules";
 import { buildApiLayer } from "./buildApiLayer";
 import { buildDatabaseSchema } from "./buildDatabaseSchema";
+import { buildResourceTypes } from "./buildResourceTypes";
 
 export function buildProjectBundle(input: ExportInput) {
     const { idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap } = input;
@@ -379,7 +380,8 @@ export function StatCard({ label, value, helperText }: StatCardProps) {
     const featureFiles = buildFeatureModules({ idea: idea || "", detectedFeatures: { hasProfile, hasActivity, hasTeam } });
     const apiFiles = buildApiLayer({ idea: idea || "", apiRoutes: blueprint.apiRoutes, detectedFeatures: { hasProfile, hasActivity, hasTeam } });
     const schemaFiles = buildDatabaseSchema({ databaseTables: blueprint.databaseTables });
-    Object.assign(files, featureFiles, apiFiles, schemaFiles);
+    const resourceFiles = buildResourceTypes({ blueprint, detectedFeatures: { hasProfile, hasActivity, hasTeam } });
+    Object.assign(files, featureFiles, apiFiles, schemaFiles, resourceFiles);
 
     return {
         projectName: idea || "appforge-project",

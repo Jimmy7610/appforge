@@ -248,6 +248,10 @@ function BlueprintContent() {
             const db = lib?.folder("db");
             db?.file("schema.ts", bundleData.files["lib/db/schema.ts"]);
         }
+        if (bundleData.files["lib/generated/resources.ts"]) {
+            const generated = lib?.folder("generated");
+            generated?.file("resources.ts", bundleData.files["lib/generated/resources.ts"]);
+        }
 
         // Conditional feature-based pages
         if (bundleData.files["app/profile/page.tsx"]) {
