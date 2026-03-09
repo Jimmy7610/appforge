@@ -1,5 +1,3 @@
-import type { Blueprint, BlueprintInput } from "../generateBlueprint";
-
 // --- Provider IDs ---
 export type AIProviderId = "openai" | "ollama";
 
@@ -7,8 +5,33 @@ export type AIProviderId = "openai" | "ollama";
 export type AIProviderConfig = {
     id: AIProviderId;
     label: string;
-    // TODO: add model selection (e.g. "gpt-4o", "llama3")
-    // TODO: add provider-specific settings (API key, base URL, temperature)
+};
+
+// --- AI settings ---
+export type AISettings = {
+    provider: AIProviderId;
+    model: string;
+    baseUrl?: string;
+    apiKey?: string;
+    // TODO: add temperature, maxTokens, and other generation parameters
+};
+
+// --- Blueprint types (canonical definitions) ---
+export type BlueprintInput = {
+    idea?: string;
+    platform?: string;
+    businessModel?: string;
+    targetUsers?: string;
+    coreFeature?: string;
+    provider?: AIProviderId;
+};
+
+export type Blueprint = {
+    features: string[];
+    techStack: string[];
+    databaseTables: string[];
+    apiRoutes: string[];
+    roadmap: string[];
 };
 
 // --- Blueprint generation contract ---
@@ -27,3 +50,4 @@ export interface AIProvider {
     label: string;
     generateBlueprint(input: BlueprintInput): Promise<AIBlueprintGenerationResult>;
 }
+

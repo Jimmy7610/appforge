@@ -1,22 +1,9 @@
-import type { AIProviderId } from "./types";
+import type { AIProviderId, BlueprintInput, Blueprint } from "./types";
 import { getAIProvider } from "./providerRegistry";
+import { resolveAISettings } from "./settings";
 
-export type BlueprintInput = {
-    idea?: string;
-    platform?: string;
-    businessModel?: string;
-    targetUsers?: string;
-    coreFeature?: string;
-    provider?: AIProviderId;
-};
-
-export type Blueprint = {
-    features: string[];
-    techStack: string[];
-    databaseTables: string[];
-    apiRoutes: string[];
-    roadmap: string[];
-};
+// Re-export for backward compatibility — existing callers import from here
+export type { BlueprintInput, Blueprint } from "./types";
 
 function pickRandom(arr: string[]): string {
     return arr[Math.floor(Math.random() * arr.length)];
@@ -175,18 +162,25 @@ export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
 }
 
 /**
- * Main entry point — resolves the provider and delegates blueprint generation.
+ * Main entry point — resolves settings and provider, then delegates blueprint generation.
  * Synchronous callers (no provider) get the local blueprint directly.
  * Async callers (with provider) go through the provider registry.
  */
 export function generateBlueprint(input: BlueprintInput): Blueprint {
-    // When a provider is specified, resolve through the registry.
-    // For now all providers use the same local generation, so we call it directly
-    // to keep the sync return signature stable for existing callers.
-    // TODO: When real API calls are wired, make this function async and
-    // update callers to await the result.
-    const provider = getAIProvider(input.provider);
-    void provider; // Acknowledged — will be used once providers make real API calls
+    // Resolve complete settings from partial input
+    const settings = resolveAISettings({
+        provider: input.provider,
+    });
+
+    // Resolve the provider instance
+    const provider = getAIProvider(settings.provider);
+    // Settings are resolved and provider is ready — will be used once real API calls are wired
+    void provider;
+    void settings;
+
+    // TODO: When real API calls are wired, make this function async,
+    // pass settings (model, apiKey, baseUrl) to provider.generateBlueprint(),
+    // and update callers to await the result.
 
     return generateLocalBlueprint(input);
 }
