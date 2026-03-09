@@ -756,6 +756,12 @@ function BlueprintContent() {
                         >
                             Export ZIP (Docs)
                         </button>
+                        <Link
+                            href={`/project/blueprint/preview?id=${idParam || ""}`}
+                            className="hidden rounded-full border border-indigo-500/30 bg-indigo-500/10 px-6 py-2.5 text-sm font-semibold text-indigo-400 transition-all hover:bg-indigo-500/20 active:scale-95 sm:block"
+                        >
+                            Preview Project
+                        </Link>
                         <button
                             onClick={handleFullExport}
                             className="hidden rounded-full border border-blue-500/30 bg-blue-500/10 px-6 py-2.5 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 sm:block"
@@ -1374,10 +1380,16 @@ function BlueprintContent() {
                     Export a shareable blueprint file that can be imported into another AppForge instance.
                 </div>
                 <button
+                    onClick={() => router.push(`/project/blueprint/preview?id=${idParam || ""}`)}
+                    className="w-full rounded-full border border-indigo-500/30 bg-indigo-500/10 px-8 py-4 text-sm font-semibold text-indigo-400 transition-all hover:bg-indigo-500/20 active:scale-95"
+                >
+                    Preview Project
+                </button>
+                <button
                     onClick={handleExportZip}
                     className="w-full rounded-full border border-white/20 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95"
                 >
-                    Export ZIP Package
+                    Export ZIP (Docs)
                 </button>
                 <button
                     onClick={handleExportBundle}
