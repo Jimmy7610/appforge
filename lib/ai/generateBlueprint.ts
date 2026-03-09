@@ -1,7 +1,8 @@
-import type { AIProviderId, BlueprintInput, Blueprint } from "./types";
+import type { AIProviderId, BlueprintInput, Blueprint, AISettings } from "./types";
 import { getAIProvider } from "./providerRegistry";
 import { resolveAISettings } from "./settings";
 import { getStoredAISettings } from "./getStoredAISettings";
+import { getAITaskHandler } from "./tasks/taskRegistry";
 
 // Re-export for backward compatibility — existing callers import from here
 export type { BlueprintInput, Blueprint } from "./types";
@@ -172,24 +173,26 @@ export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
  * Main entry point — resolves settings and provider, then delegates blueprint generation.
  * Async callers go through the provider registry.
  */
-export async function generateBlueprint(input: BlueprintInput): Promise<Blueprint> {
-    // Resolve complete settings in this priority order:
-    // 1. Explicit input overrides
-    // 2. Stored AI settings from localStorage (if any)
-    // 3. Provider defaults
+export async function generateBlueprint(
+    input: BlueprintInput,
+    explicitSettings?: Partial<AISettings>
+): Promise<Blueprint> {
+    const storedSettings = getStoredAISettings();
 
-    const storedResolved = getStoredAISettings();
-
-    const finalOverrides = {
-        ...storedResolved,
+    const finalOverrides: Partial<AISettings> = {
+        ...storedSettings,
         ...(input.provider ? { provider: input.provider } : {}),
+        ...(explicitSettings || {})
     };
 
-    const settings = resolveAISettings(finalOverrides);
+    const resolvedSettings = resolveAISettings(finalOverrides);
 
-    // Resolve the provider instance
-    const provider = getAIProvider(settings.provider);
+    const provider = getAIProvider(resolvedSettings.provider);
+    const handler = getAITaskHandler("generateBlueprint");
 
-    const result = await provider.generateBlueprint(input, settings);
-    return result.blueprint;
+    return provider.executeTask({
+        taskId: "generateBlueprint",
+        input,
+        settings: resolvedSettings
+    }, handler);
 }

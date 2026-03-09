@@ -43,20 +43,12 @@ export type Blueprint = {
     metadata?: AIGenerationMetadata;
 };
 
-// --- Blueprint generation contract ---
-export type AIBlueprintGenerationInput = BlueprintInput & {
-    provider?: AIProviderId;
-};
-
-export type AIBlueprintGenerationResult = {
-    blueprint: Blueprint;
-    provider: AIProviderId;
-};
+import type { AITaskId, AITaskContext, AITaskHandler, AITaskResultMap } from "./tasks/types";
 
 // --- Provider interface ---
 export interface AIProvider {
     id: AIProviderId;
     label: string;
-    generateBlueprint(input: BlueprintInput, settings: AISettings): Promise<AIBlueprintGenerationResult>;
+    executeTask<T extends AITaskId>(context: AITaskContext<T>, handler: AITaskHandler<T>): Promise<AITaskResultMap[T]>;
 }
 

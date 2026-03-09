@@ -1,49 +1,21 @@
-import type { AIProvider, AIBlueprintGenerationResult, AISettings } from "../types";
-import type { BlueprintInput, Blueprint } from "../generateBlueprint";
-import { generateLocalBlueprint } from "../generateBlueprint";
+import type { AIProvider, AISettings } from "../types";
+import type { AITaskId, AITaskContext, AITaskHandler, AITaskResultMap } from "../tasks/types";
 
 // TODO: Support streaming responses
 // TODO: Add retry handling and rate limiting
 // TODO: Refine model selection and prompt engineering
 
-function buildPrompt(input: BlueprintInput): string {
-    return `Generate a technical project blueprint for a new application.
-App Idea: ${input.idea || "A general web application"}
-Platform: ${input.platform || "Web"}
-Business Model: ${input.businessModel || "SaaS"}
-Target Users: ${input.targetUsers || "General users"}
-Core Feature: ${input.coreFeature || "User authentication and dashboard"}
-
-Return a pure JSON object (no markdown formatting, no backticks, no markdown code blocks) matching this exact TypeScript interface:
-{
-    "features": string[], // 5-7 key features
-    "techStack": string[], // 5-7 core technologies (e.g. Next.js, Tailwind, Postgres)
-    "databaseTables": string[], // 4-6 main database table names (lowercase, plural, e.g. "users", "projects")
-    "apiRoutes": string[], // 4-6 core API routes (e.g. "GET /api/users", "POST /api/auth")
-    "roadmap": string[] // 3 high-level phases
-}
-
-IMPORTANT: Reply ONLY with the raw JSON object. Do not wrap in \`\`\`json ... \`\`\`.`;
-}
-
 export const openAIProvider: AIProvider = {
     id: "openai",
     label: "OpenAI",
 
-    async generateBlueprint(input: BlueprintInput, settings: AISettings): Promise<AIBlueprintGenerationResult> {
+    async executeTask<T extends AITaskId>(context: AITaskContext<T>, handler: AITaskHandler<T>): Promise<AITaskResultMap[T]> {
+        const { settings, input } = context;
+        const model = settings.model || "gpt-3.5-turbo";
+
         if (!settings.apiKey) {
-            console.warn("OpenAI: No API key provided, falling back to local generation.");
-            const localBp = generateLocalBlueprint(input);
-            localBp.metadata = {
-                provider: "openai",
-                model: settings.model || "gpt-3.5-turbo",
-                usedFallback: true,
-                sourceLabel: `OpenAI (${settings.model || "gpt-3.5-turbo"}) — local fallback`
-            };
-            return {
-                blueprint: localBp,
-                provider: "openai"
-            };
+            console.warn("OpenAI: No API key provided, triggering fallback.");
+            return handler.getFallback(input, settings, this.id, new Error("No API key"));
         }
 
         try {
@@ -55,11 +27,12 @@ export const openAIProvider: AIProvider = {
                     "Authorization": `Bearer ${settings.apiKey}`
                 },
                 body: JSON.stringify({
-                    model: settings.model || "gpt-3.5-turbo",
+                    model: model,
                     messages: [
                         { role: "system", content: "You are a senior software architect." },
-                        { role: "user", content: buildPrompt(input) }
+                        { role: "user", content: handler.buildPrompt(input) }
                     ],
+                    // We request json_object if supported, standard for structure tasks
                     response_format: { type: "json_object" }
                 })
             });
@@ -76,38 +49,23 @@ export const openAIProvider: AIProvider = {
                 throw new Error("OpenAI API returned an empty response.");
             }
 
-            const parsed = JSON.parse(content) as Blueprint;
+            const parsed = handler.parseResponse(content);
 
-            if (!Array.isArray(parsed.features) || !Array.isArray(parsed.techStack)) {
-                throw new Error("OpenAI response missing required arrays.");
+            // Attach successful metadata structurally
+            if (typeof parsed === "object" && parsed !== null) {
+                (parsed as any).metadata = {
+                    provider: "openai",
+                    model: model,
+                    usedFallback: false,
+                    sourceLabel: `OpenAI (${model})`
+                };
             }
 
-            parsed.metadata = {
-                provider: "openai",
-                model: settings.model || "gpt-3.5-turbo",
-                usedFallback: false,
-                sourceLabel: `OpenAI (${settings.model || "gpt-3.5-turbo"})`
-            };
-
-            return {
-                blueprint: parsed,
-                provider: "openai"
-            };
+            return parsed;
 
         } catch (e) {
-            console.error("OpenAI generation failed:", e);
-            console.warn("Falling back to local generation.");
-            const localBp = generateLocalBlueprint(input);
-            localBp.metadata = {
-                provider: "openai",
-                model: settings.model || "gpt-3.5-turbo",
-                usedFallback: true,
-                sourceLabel: `OpenAI (${settings.model || "gpt-3.5-turbo"}) — local fallback`
-            };
-            return {
-                blueprint: localBp,
-                provider: "openai"
-            };
+            console.error(`OpenAI execution failed for task ${context.taskId}:`, e);
+            return handler.getFallback(input, settings, this.id, e);
         }
     },
 };
