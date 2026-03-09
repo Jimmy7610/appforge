@@ -244,6 +244,10 @@ function BlueprintContent() {
         const lib = zip.folder("lib");
         lib?.file("types.ts", bundleData.files["lib/types.ts"]);
         lib?.file("mock-data.ts", bundleData.files["lib/mock-data.ts"]);
+        if (bundleData.files["lib/db/schema.ts"]) {
+            const db = lib?.folder("db");
+            db?.file("schema.ts", bundleData.files["lib/db/schema.ts"]);
+        }
 
         // Conditional feature-based pages
         if (bundleData.files["app/profile/page.tsx"]) {
