@@ -733,14 +733,9 @@ function BlueprintContent() {
                     >
                         ⭐ Improve Blueprint
                     </button>
-                    <button
-                        onClick={handleExplain}
-                        disabled={isExplaining}
-                        className="rounded-xl border border-zinc-500/50 bg-zinc-800/50 px-6 py-3 text-sm font-semibold text-zinc-300 transition-all hover:bg-zinc-700/50 active:scale-95 disabled:opacity-50 sm:w-auto shrink-0 flex items-center justify-center gap-2"
-                    >
-                        {isExplaining && <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white mr-1"></span>}
-                        Explain Architecture
-                    </button>
+
+                    <div className="w-px bg-white/10 hidden sm:block my-2"></div>
+
                     <button
                         onClick={handleGenerateDiagram}
                         disabled={isGeneratingDiagram}
@@ -748,6 +743,14 @@ function BlueprintContent() {
                     >
                         {isGeneratingDiagram && <span className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-white mr-1"></span>}
                         Generate Diagram
+                    </button>
+                    <button
+                        onClick={handleExplain}
+                        disabled={isExplaining}
+                        className="rounded-xl border border-zinc-500/50 bg-zinc-800/50 px-6 py-3 text-sm font-semibold text-zinc-300 transition-all hover:bg-zinc-700/50 active:scale-95 disabled:opacity-50 sm:w-auto shrink-0 flex items-center justify-center gap-2"
+                    >
+                        {isExplaining && <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white mr-1"></span>}
+                        Explain Architecture
                     </button>
                 </div>
             </div>
