@@ -226,8 +226,14 @@ function BlueprintContent() {
         settingsFolder?.file("page.tsx", bundleData.files["app/settings/page.tsx"]);
 
         const api = app?.folder("api");
-        const health = api?.folder("health");
-        health?.file("route.ts", bundleData.files["app/api/health/route.ts"]);
+        // Dynamically add all generated API routes
+        for (const [path, content] of Object.entries(bundleData.files)) {
+            if (path.startsWith("app/api/") && path.endsWith("/route.ts")) {
+                const slug = path.replace("app/api/", "").replace("/route.ts", "");
+                const folder = api?.folder(slug);
+                folder?.file("route.ts", content);
+            }
+        }
 
         const components = zip.folder("components");
         const ui = components?.folder("ui");
