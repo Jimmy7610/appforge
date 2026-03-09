@@ -1,6 +1,7 @@
 import type { AIProviderId, BlueprintInput, Blueprint } from "./types";
 import { getAIProvider } from "./providerRegistry";
 import { resolveAISettings } from "./settings";
+import { getStoredAISettings } from "./getStoredAISettings";
 
 // Re-export for backward compatibility — existing callers import from here
 export type { BlueprintInput, Blueprint } from "./types";
@@ -167,10 +168,19 @@ export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
  * Async callers (with provider) go through the provider registry.
  */
 export function generateBlueprint(input: BlueprintInput): Blueprint {
-    // Resolve complete settings from partial input
-    const settings = resolveAISettings({
-        provider: input.provider,
-    });
+    // Resolve complete settings in this priority order:
+    // 1. Explicit input overrides
+    // 2. Stored AI settings from localStorage (if any)
+    // 3. Provider defaults
+
+    const storedResolved = getStoredAISettings();
+
+    const finalOverrides = {
+        ...storedResolved,
+        ...(input.provider ? { provider: input.provider } : {}),
+    };
+
+    const settings = resolveAISettings(finalOverrides);
 
     // Resolve the provider instance
     const provider = getAIProvider(settings.provider);
