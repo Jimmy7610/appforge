@@ -230,6 +230,13 @@ export default function Dashboard() {
                         >
                             <Settings className="h-5 w-5" />
                         </Link>
+                        <Link
+                            href="/library"
+                            className="flex h-10 items-center justify-center rounded-full border border-white/10 bg-white/5 px-4 text-sm font-medium text-zinc-400 transition-all hover:bg-white/10 hover:text-white active:scale-95"
+                            title="Blueprint Library"
+                        >
+                            Library
+                        </Link>
                         <button
                             onClick={() => blueprintInputRef.current?.click()}
                             className="rounded-full border border-blue-500/30 bg-blue-500/10 px-5 py-2.5 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95"
