@@ -14,6 +14,7 @@ import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
 import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
 import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
 import { buildShareBlueprint } from "@/lib/export/buildShareBlueprint";
+import { buildFullProject } from "@/lib/export/buildFullProject";
 
 function BlueprintContent() {
     const searchParams = useSearchParams();
@@ -413,18 +414,48 @@ function BlueprintContent() {
             teamFolder?.file("page.tsx", bundleData.files["app/team/page.tsx"]);
         }
 
+        const content = await zip.generateAsync({ type: "blob" });
+        const url = URL.createObjectURL(content);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "appforge-starter-pack.zip";
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleFullExport = async () => {
+        if (!blueprint) return;
+
         try {
+            const files = buildFullProject({ idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap });
+            const zip = new JSZip();
+
+            // Generic file map to ZIP conversion
+            for (const [path, content] of Object.entries(files)) {
+                zip.file(path, content);
+            }
+
+            const slug = (idea || "appforge-app")
+                .toLowerCase()
+                .replace(/[^a-z0-9]+/g, "-")
+                .replace(/^-+|-+$/g, "");
+
             const content = await zip.generateAsync({ type: "blob" });
             const url = URL.createObjectURL(content);
             const a = document.createElement("a");
             a.href = url;
-            a.download = "appforge-project.zip";
+            a.download = `${slug}-starter-project.zip`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
+
+            window.alert("Full project generated and downloaded successfully!");
         } catch (e) {
-            console.error("Failed to generate zip", e);
+            console.error("Failed to generate full project", e);
+            window.alert("Failed to generate full project. Check console for details.");
         }
     };
 
@@ -506,7 +537,13 @@ function BlueprintContent() {
                             onClick={handleExportZip}
                             className="hidden rounded-full border border-white/20 bg-white/5 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-white/10 active:scale-95 xl:block"
                         >
-                            Export ZIP Package
+                            Export ZIP (Docs)
+                        </button>
+                        <button
+                            onClick={handleFullExport}
+                            className="hidden rounded-full border border-blue-500/30 bg-blue-500/10 px-6 py-2.5 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 sm:block"
+                        >
+                            Generate Full Project
                         </button>
                         <button
                             onClick={handleExportBundle}
