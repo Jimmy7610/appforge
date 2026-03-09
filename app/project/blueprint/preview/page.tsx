@@ -9,6 +9,7 @@ import { buildFullProject } from "@/lib/export/buildFullProject";
 import { buildFileTree, FileNode } from "@/lib/utils/preview-utils";
 import { BrowserTree } from "@/components/blueprint/browser-tree";
 import { CodeViewer } from "@/components/blueprint/code-viewer";
+import { BackToDashboard } from "@/components/back-to-dashboard";
 
 function PreviewContent() {
     const searchParams = useSearchParams();
@@ -109,7 +110,11 @@ function PreviewContent() {
     if (!project) return null;
 
     return (
-        <div className="flex flex-col h-screen bg-zinc-950 text-zinc-200 overflow-hidden">
+        <div className="flex flex-col h-[calc(100vh-64px)] bg-zinc-950 text-zinc-200 overflow-hidden">
+            {/* Back to dashboard */}
+            <div className="px-6 pt-4 pb-0 bg-zinc-900/50">
+                <BackToDashboard />
+            </div>
             {/* Header */}
             <header className="flex h-16 shrink-0 items-center justify-between border-b border-white/5 bg-zinc-900/50 px-6 backdrop-blur-md">
                 <div className="flex items-center gap-4">

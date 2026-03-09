@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Suspense, useState, useEffect } from "react";
+import { BackToDashboard } from "@/components/back-to-dashboard";
 import JSZip from "jszip";
 import { generateBlueprint, type Blueprint } from "@/lib/ai/generateBlueprint";
 import { improveBlueprint } from "@/lib/ai/improveBlueprint";
@@ -17,6 +18,8 @@ import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
 import { buildProjectBundle } from "@/lib/export/buildProjectBundle";
 import { buildShareBlueprint } from "@/lib/export/buildShareBlueprint";
 import { buildFullProject } from "@/lib/export/buildFullProject";
+import { ErrorBoundary } from "react-error-boundary";
+import { Sparkles, ArrowLeft } from "lucide-react";
 import { MermaidDiagram } from "@/components/blueprint/mermaid-diagram";
 import { ArchitectureCritique } from "@/components/blueprint/architecture-critique";
 import { ArchitectureSuggestions } from "@/components/blueprint/architecture-suggestions";
@@ -799,17 +802,10 @@ function BlueprintContent() {
 
             {/* Header section */}
             <div className="mb-8">
-                <Link
-                    href={idParam ? "/dashboard" : "/project/new/details"}
-                    className="mb-6 inline-flex items-center text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="mr-2 h-4 w-4">
-                        <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                    </svg>
-                    {idParam ? "Back to Dashboard" : "Back to Details"}
-                </Link>
-                <div className="flex items-center justify-between">
+                <BackToDashboard />
+                <div className="flex items-center justify-between mt-2">
                     <div>
+                        <div className="text-sm font-semibold uppercase tracking-wider text-zinc-500 mb-2">Project: {idea || "New Project"}</div>
                         <h1 className="text-3xl font-bold tracking-tight text-white mb-3">
                             Blueprint Preview
                         </h1>
@@ -1571,12 +1567,15 @@ function BlueprintContent() {
 
 export default function BlueprintPreview() {
     return (
-        <div className="flex min-h-screen flex-col bg-zinc-950 text-white selection:bg-blue-500/30">
-            <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-12 sm:px-6 lg:px-8 flex flex-col justify-center">
-                <Suspense fallback={<div className="text-zinc-500">Loading Blueprint...</div>}>
-                    <BlueprintContent />
-                </Suspense>
-            </main>
+        <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-blue-500/30">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-32">
+                {/* Header */}
+                <header className="mb-12">
+                    <Suspense fallback={<div className="text-zinc-500">Loading Blueprint...</div>}>
+                        <BlueprintContent />
+                    </Suspense>
+                </header>
+            </div>
         </div>
     );
 }

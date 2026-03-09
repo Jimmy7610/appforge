@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { BackToDashboard } from "@/components/back-to-dashboard";
 
 export default function CreateProject() {
     const [idea, setIdea] = useState("");
@@ -20,15 +21,7 @@ export default function CreateProject() {
 
                 {/* Header section */}
                 <div className="mb-8">
-                    <Link
-                        href="/dashboard"
-                        className="mb-6 inline-flex items-center text-sm font-medium text-zinc-500 hover:text-zinc-300 transition-colors"
-                    >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="mr-2 h-4 w-4">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
-                        </svg>
-                        Back to Dashboard
-                    </Link>
+                    <BackToDashboard />
                     <h1 className="text-3xl font-bold tracking-tight text-white mb-3">
                         Create Project
                     </h1>
