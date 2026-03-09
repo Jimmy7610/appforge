@@ -6,6 +6,8 @@ import { Suspense, useState, useEffect } from "react";
 import JSZip from "jszip";
 import { generateBlueprint, type Blueprint } from "@/lib/ai/generateBlueprint";
 import { improveBlueprint } from "@/lib/ai/improveBlueprint";
+import { explainBlueprint } from "@/lib/ai/explainBlueprint";
+import type { ExplainBlueprintResult } from "@/lib/ai/tasks/types";
 import { diffBlueprints, type BlueprintDiff, hasAnyChanges } from "@/lib/ai/diffBlueprints";
 import { buildStarterPack, ExportInput } from "@/lib/export/buildStarterPack";
 import { buildMarkdownFiles } from "@/lib/export/buildMarkdownFiles";
@@ -42,6 +44,10 @@ function BlueprintContent() {
     const [isImproving, setIsImproving] = useState(false);
     const [instructions, setInstructions] = useState("");
     const [diffResult, setDiffResult] = useState<BlueprintDiff | null>(null);
+
+    // Explain UI state
+    const [isExplaining, setIsExplaining] = useState(false);
+    const [explanation, setExplanation] = useState<ExplainBlueprintResult | null>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -88,6 +94,7 @@ function BlueprintContent() {
         setIsGenerating(true);
         // Reset diff state since this is a full regeneration wrapper
         setDiffResult(null);
+        setExplanation(null);
         try {
             const bp = await generateBlueprint({ idea, platform, businessModel, targetUsers, coreFeature });
             setBlueprint(bp);
@@ -111,11 +118,29 @@ function BlueprintContent() {
             setDiffResult(diff);
             setBlueprint(bp);
             setInstructions(""); // Clear input on success
+            setExplanation(null); // Clear previous explanation since architecture changed
         } catch (e) {
             console.error("Failed to improve blueprint", e);
             window.alert("Failed to improve blueprint. Check console for details.");
         } finally {
             setIsImproving(false);
+        }
+    };
+
+    const handleExplain = async () => {
+        if (!blueprint) return;
+        setIsExplaining(true);
+        try {
+            const exp = await explainBlueprint({
+                originalInput: { idea, platform, businessModel, targetUsers, coreFeature },
+                currentBlueprint: blueprint
+            });
+            setExplanation(exp);
+        } catch (e) {
+            console.error("Failed to explain blueprint", e);
+            window.alert("Failed to explain architecture. Check console for details.");
+        } finally {
+            setIsExplaining(false);
         }
     };
 
@@ -527,9 +552,17 @@ function BlueprintContent() {
                     <button
                         onClick={handleImprove}
                         disabled={isImproving}
-                        className="rounded-xl border border-blue-500/50 bg-blue-500/10 px-8 py-3 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 disabled:opacity-50 sm:w-auto"
+                        className="rounded-xl border border-blue-500/50 bg-blue-500/10 px-6 py-3 text-sm font-semibold text-blue-400 transition-all hover:bg-blue-500/20 active:scale-95 disabled:opacity-50 sm:w-auto shrink-0"
                     >
                         ⭐ Improve Blueprint
+                    </button>
+                    <button
+                        onClick={handleExplain}
+                        disabled={isExplaining}
+                        className="rounded-xl border border-zinc-500/50 bg-zinc-800/50 px-6 py-3 text-sm font-semibold text-zinc-300 transition-all hover:bg-zinc-700/50 active:scale-95 disabled:opacity-50 sm:w-auto shrink-0 flex items-center justify-center gap-2"
+                    >
+                        {isExplaining && <span className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white mr-1"></span>}
+                        Explain Architecture
                     </button>
                 </div>
             </div>
@@ -576,6 +609,38 @@ function BlueprintContent() {
                 <div className="mb-8 rounded-2xl border border-zinc-500/20 bg-zinc-900/50 p-6 shadow-xl backdrop-blur-sm sm:p-8 flex items-center gap-3">
                     <div className="h-2 w-2 rounded-full bg-zinc-500"></div>
                     <p className="text-sm text-zinc-300">No structural changes detected from this improvement pass.</p>
+                </div>
+            )}
+
+            {/* Architecture Explanation UI */}
+            {explanation && (
+                <div className="mb-8 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
+                    <h3 className="text-lg font-semibold tracking-tight text-emerald-400 mb-4 ml-1">Architecture Explanation</h3>
+                    <div className="rounded-xl bg-zinc-900/50 p-6 border border-emerald-500/10">
+                        <div className="prose prose-invert prose-emerald max-w-none prose-sm sm:prose-base leading-relaxed text-zinc-300">
+                            {explanation.explanation.split('\n').map((paragraph, i) => {
+                                // Simple line break rendering instead of a full markdown parser to keep dependencies low
+                                if (paragraph.trim().startsWith('- ')) {
+                                    return <li key={i} className="ml-4 list-disc">{paragraph.replace('- ', '')}</li>;
+                                }
+                                if (paragraph.trim().startsWith('**') && paragraph.trim().endsWith('**')) {
+                                    return <p key={i} className="font-semibold text-zinc-200 mt-4 mb-2">{paragraph.replace(/\*\*/g, '')}</p>;
+                                }
+                                if (paragraph.trim().startsWith('###')) {
+                                    return <h4 key={i} className="text-lg font-semibold text-emerald-300 mt-6 mb-3">{paragraph.replace(/###/g, '').trim()}</h4>;
+                                }
+                                return <p key={i} className="mb-4">{paragraph}</p>;
+                            })}
+                        </div>
+                    </div>
+                    {explanation.metadata && (
+                        <div className="mt-4 flex items-center justify-end">
+                            <span className="flex items-center gap-1.5 rounded-full border border-zinc-800 bg-zinc-900/50 px-3 py-1 text-xs font-medium text-zinc-400">
+                                <span className={`h-1.5 w-1.5 rounded-full ${explanation.metadata.usedFallback || explanation.metadata.provider === "local" ? "bg-amber-500" : "bg-emerald-500"}`}></span>
+                                Explained via: {explanation.metadata.sourceLabel}
+                            </span>
+                        </div>
+                    )}
                 </div>
             )}
 
