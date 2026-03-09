@@ -30,15 +30,23 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
     useEffect(() => {
         if (!isIdInitialized || !source) return;
 
+        const cleanMermaidSource = (raw: string) => {
+            let cleaned = raw.trim();
+            // Fix sequence diagram arrows hallucinated in flowcharts (e.g. --|Label| -> -->|Label|)
+            cleaned = cleaned.replace(/--\|([^|]+)\|/g, "-->|$1|");
+            return cleaned;
+        };
+
         const renderDiagram = async () => {
             try {
+                const cleanedSource = cleanMermaidSource(source);
                 setError(null);
                 // Clear the container before rendering to prevent conflicts
                 if (containerRef.current) {
                     containerRef.current.innerHTML = "";
                 }
 
-                const { svg: generatedSvg } = await mermaid.render(id.current, source);
+                const { svg: generatedSvg } = await mermaid.render(id.current, cleanedSource);
                 setSvg(generatedSvg);
             } catch (err: any) {
                 console.error("Mermaid render error:", err);

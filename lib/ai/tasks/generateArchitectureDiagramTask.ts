@@ -7,7 +7,7 @@ export const generateArchitectureDiagramTask: AITaskHandler<"generateArchitectur
     buildPrompt(input: GenerateArchitectureDiagramInput): string {
         const { originalInput, currentBlueprint } = input;
 
-        return `You are a system architect. Generate a Mermaid.js architecture diagram for the following project.
+        return `You are a system architect. Generate a Mermaid.js flowchart (graph TD) for the following project.
         
 Project Idea: ${originalInput.idea}
 Platform: ${originalInput.platform}
@@ -22,15 +22,17 @@ Database Tables: ${currentBlueprint.databaseTables.join(", ")}
 API Routes: ${currentBlueprint.apiRoutes.join(", ")}
 
 Instructions:
-1. Create a "graph TD" or "graph LR" Mermaid diagram.
-2. Include nodes for: User/Client, Frontend/App Layer, API/Backend Layer, Database/Data Layer.
-3. Show relationships between components.
-4. Keep the diagram professional and clear.
-5. Return ONLY a JSON object with a single "diagram" field containing the Mermaid code.
+1. Create a "graph TD" Mermaid diagram.
+2. Use nodes for: User/Client, Frontend/App Layer, API/Backend Layer, Database/Data Layer.
+3. CRITICAL: For nodes containing special characters (/, spaces, dots), you MUST use labels with double quotes.
+   Example: User["User / Client"] --> Frontend["Frontend / App Layer"]
+4. Use standard valid arrow syntax: --> or -->|Label|. Do NOT use sequence diagram syntax like --|.
+5. Keep the diagram professional and clear.
+6. Return ONLY a JSON object with a single "diagram" field containing the Mermaid code.
 
 Example Output Format:
 {
-  "diagram": "graph TD\\nUser --> App\\nApp --> API\\nAPI --> DB"
+  "diagram": "graph TD\\n  User[\\"User / Client\\"] --> App[\\"Frontend Layer\\"]\\n  App --> API[\\"Backend API\\"]\\n  API --> DB[(\\"Database\\")]"
 }
 
 Return valid JSON only.`;
