@@ -5,12 +5,13 @@ import mermaid from "mermaid";
 
 interface MermaidDiagramProps {
     source: string;
+    onRender?: (svg: string) => void;
 }
 
 /**
  * A lightweight client component to render Mermaid diagrams safely.
  */
-export function MermaidDiagram({ source }: MermaidDiagramProps) {
+export function MermaidDiagram({ source, onRender }: MermaidDiagramProps) {
     const containerRef = useRef<HTMLDivElement>(null);
     const [svg, setSvg] = useState<string>("");
     const [error, setError] = useState<string | null>(null);
@@ -56,9 +57,11 @@ export function MermaidDiagram({ source }: MermaidDiagramProps) {
 
                 const { svg: generatedSvg } = await mermaid.render(id.current, cleanedSource);
                 setSvg(generatedSvg);
+                if (onRender) onRender(generatedSvg);
             } catch (err: any) {
                 console.error("Mermaid render error:", err);
                 setError("Failed to render diagram. Please check the Mermaid source syntax.");
+                if (onRender) onRender("");
 
                 // When an error occurs, Mermaid might leave the container in a weird state
                 // or throw an internal error. We clean up.

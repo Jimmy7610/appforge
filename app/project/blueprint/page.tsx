@@ -58,6 +58,7 @@ function BlueprintContent() {
     // Diagram UI state
     const [isGeneratingDiagram, setIsGeneratingDiagram] = useState(false);
     const [diagram, setDiagram] = useState<GenerateArchitectureDiagramResult | null>(null);
+    const [renderedSvg, setRenderedSvg] = useState<string>("");
 
     // Chat UI state
     const [isChatting, setIsChatting] = useState(false);
@@ -140,6 +141,7 @@ function BlueprintContent() {
         setDiffResult(null);
         setExplanation(null);
         setDiagram(null);
+        setRenderedSvg("");
         try {
             const bp = await generateBlueprint({ idea, platform, businessModel, targetUsers, coreFeature });
             setBlueprint(bp);
@@ -167,6 +169,7 @@ function BlueprintContent() {
             setInstructions(""); // Clear input on success
             setExplanation(null); // Clear previous explanation since architecture changed
             setDiagram(null); // Clear previous diagram since architecture changed
+            setRenderedSvg(""); // Clear previous rendered SVG
         } catch (e) {
             console.error("Failed to improve blueprint", e);
             window.alert("Failed to improve blueprint. Check console for details.");
@@ -197,6 +200,7 @@ function BlueprintContent() {
     const handleGenerateDiagram = async () => {
         if (!blueprint) return;
         setIsGeneratingDiagram(true);
+        setRenderedSvg("");
         try {
             const diag = await generateArchitectureDiagram({
                 originalInput: { idea, platform, businessModel, targetUsers, coreFeature },
@@ -209,6 +213,64 @@ function BlueprintContent() {
         } finally {
             setIsGeneratingDiagram(false);
         }
+    };
+
+    const handleDownloadSVG = () => {
+        if (!renderedSvg) return;
+        const blob = new Blob([renderedSvg], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const slug = (idea || "architecture").toLowerCase().replace(/[^a-z0-0]+/g, "-").replace(/^-+|-+$/g, "");
+        link.href = url;
+        link.download = `${slug}-architecture.svg`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleDownloadPNG = () => {
+        if (!renderedSvg) return;
+
+        const svgData = renderedSvg;
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const img = new Image();
+        const svgBlob = new Blob([svgData], { type: "image/svg+xml;charset=utf-8" });
+        const url = URL.createObjectURL(svgBlob);
+
+        img.onload = () => {
+            // Increase resolution for better quality
+            const scale = 2;
+            canvas.width = img.width * scale;
+            canvas.height = img.height * scale;
+
+            // Draw background for non-transparent PNG
+            ctx.fillStyle = "#09090b"; // zinc-950 (matching AppForge theme)
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.scale(scale, scale);
+            ctx.drawImage(img, 0, 0);
+
+            const pngUrl = canvas.toDataURL("image/png");
+            const link = document.createElement("a");
+            const slug = (idea || "architecture").toLowerCase().replace(/[^a-z0-0]+/g, "-").replace(/^-+|-+$/g, "");
+            link.href = pngUrl;
+            link.download = `${slug}-architecture.png`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        };
+
+        img.onerror = (e) => {
+            console.error("PNG conversion failed", e);
+            window.alert("Failed to export PNG. Try SVG export instead.");
+        };
+
+        img.src = url;
     };
 
     const handleChat = async (overrideInput?: string) => {
@@ -837,20 +899,39 @@ function BlueprintContent() {
                 <div className="mb-8 rounded-2xl border border-blue-500/20 bg-blue-500/5 p-6 shadow-xl backdrop-blur-sm sm:p-10">
                     <div className="mb-4 flex items-center justify-between ml-1">
                         <h3 className="text-lg font-semibold tracking-tight text-blue-400">Architecture Diagram (Mermaid)</h3>
-                        <button
-                            onClick={() => {
-                                navigator.clipboard.writeText(diagram.diagram);
-                                window.alert("Mermaid code copied to clipboard!");
-                            }}
-                            className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
-                        >
-                            Copy Mermaid
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={handleDownloadSVG}
+                                disabled={!renderedSvg}
+                                className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Download SVG
+                            </button>
+                            <button
+                                onClick={handleDownloadPNG}
+                                disabled={!renderedSvg}
+                                className="rounded-lg bg-indigo-500/10 px-3 py-1.5 text-xs font-medium text-indigo-400 border border-indigo-500/20 hover:bg-indigo-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                Download PNG
+                            </button>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(diagram.diagram);
+                                    window.alert("Mermaid code copied to clipboard!");
+                                }}
+                                className="rounded-lg bg-blue-500/10 px-3 py-1.5 text-xs font-medium text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition-all"
+                            >
+                                Copy Mermaid
+                            </button>
+                        </div>
                     </div>
 
                     {/* Live Diagram Preview */}
                     <div className="mb-6">
-                        <MermaidDiagram source={diagram.diagram} />
+                        <MermaidDiagram
+                            source={diagram.diagram}
+                            onRender={(svg) => setRenderedSvg(svg)}
+                        />
                     </div>
 
                     <div className="mb-3 flex items-center justify-between ml-1">
@@ -862,15 +943,16 @@ function BlueprintContent() {
                         {diagram.diagram}
                     </div>
 
+
                     <p className="mt-4 text-xs text-zinc-500 italic ml-1">
-                        Note: Live preview is rendered from the Mermaid source above. You can copy the source for external editors or sharing.
+                        Note: Exports are generated from the live rendered Mermaid preview above. You can also copy the source for external editors.
                     </p>
 
-                    {/* TODO: PNG Export */}
-                    {/* TODO: SVG Download */}
-                    {/* TODO: Theme Switching (Light/Dark) */}
-                    {/* TODO: Zoom and Pan support */}
-                    {/* TODO: Infra/Deployment Diagrams */}
+                    {/* TODO: transparent PNG export depth */}
+                    {/* TODO: higher resolution PNG export (custom scale) */}
+                    {/* TODO: PDF export integration */}
+                    {/* TODO: theme selection for exports */}
+                    {/* TODO: batch export (All formats) */}
 
                     {diagram.metadata && (
                         <div className="mt-4 flex items-center justify-end">
