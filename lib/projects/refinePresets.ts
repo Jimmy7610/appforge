@@ -3,7 +3,7 @@ export interface RefinePreset {
     title: string;
     description: string;
     instruction: string;
-    iconType?: "security" | "scalability" | "performance" | "production" | "realtime" | "saas";
+    iconType?: "security" | "scalability" | "performance" | "production" | "realtime" | "saas" | "mvp" | "dx" | "cost";
 }
 
 export const REFINE_PRESETS: RefinePreset[] = [
@@ -48,5 +48,26 @@ export const REFINE_PRESETS: RefinePreset[] = [
         description: "Add billing, tenants, and admin.",
         instruction: "Restructure for a B2B SaaS model. Add strict multi-tenant data isolation, integrate subscription billing with robust webhook handlers, and add an admin reporting infrastructure.",
         iconType: "saas"
+    },
+    {
+        id: "mvp-pass",
+        title: "MVP Pass",
+        description: "Simplify to core launchable value.",
+        instruction: "Simplify the current architecture into the smallest realistic launchable version (MVP). Reduce unnecessary complexity, prioritize core user value, remove premature enterprise patterns, and make the roadmap leaner and more launch-focused.",
+        iconType: "mvp"
+    },
+    {
+        id: "dx-pass",
+        title: "DX Pass",
+        description: "Improve maintainability & dev flow.",
+        instruction: "Improve developer experience (DX) and maintainability. Improve folder/module boundaries, enforce naming consistency, reduce fragile abstractions, recommend maintainable developer workflows (e.g., CI/CD basics, linting), and improve testability and clarity.",
+        iconType: "dx"
+    },
+    {
+        id: "cost-optimization-pass",
+        title: "Cost Optimization Pass",
+        description: "Reduce infra & operational limits.",
+        instruction: "Reduce likely infrastructure and operational cost overhead. Prefer simpler services where reasonable, reduce overengineering, avoid costly realtime/distributed patterns unless clearly needed, and favor cost-aware hosting, data, and API choices (e.g., serverless over always-on where traffic is unknown).",
+        iconType: "cost"
     }
 ];

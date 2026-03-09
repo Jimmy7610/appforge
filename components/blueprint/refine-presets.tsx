@@ -1,15 +1,15 @@
 "use client";
 
-import { Shield, Zap, Activity, Server, Radio, Building2 } from "lucide-react";
+import { Shield, Zap, Activity, Server, Radio, Building2, Rocket, Code2, Coins } from "lucide-react";
 import { REFINE_PRESETS, RefinePreset } from "@/lib/projects/refinePresets";
 
 interface RefinePresetsProps {
-    onSelectPreset: (instruction: string) => void;
-    currentInstruction?: string;
+    onTogglePreset: (id: string) => void;
+    selectedPresetIds: string[];
     isApplying?: boolean;
 }
 
-export function RefinePresets({ onSelectPreset, currentInstruction, isApplying = false }: RefinePresetsProps) {
+export function RefinePresets({ onTogglePreset, selectedPresetIds = [], isApplying = false }: RefinePresetsProps) {
     const getIcon = (type: RefinePreset["iconType"]) => {
         const className = "w-4 h-4";
         switch (type) {
@@ -19,23 +19,34 @@ export function RefinePresets({ onSelectPreset, currentInstruction, isApplying =
             case "production": return <Activity className={className} />;
             case "realtime": return <Radio className={className} />;
             case "saas": return <Building2 className={className} />;
+            case "mvp": return <Rocket className={className} />;
+            case "dx": return <Code2 className={className} />;
+            case "cost": return <Coins className={className} />;
             default: return <Server className={className} />;
         }
     };
 
     return (
         <div className="mt-8 mb-4">
-            <h3 className="text-sm font-semibold text-zinc-400 mb-3 flex items-center gap-2 uppercase tracking-wider">
-                Refine with Presets
-            </h3>
+            <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold text-zinc-400 flex items-center gap-2 uppercase tracking-wider">
+                    Refine with Presets
+                </h3>
+                {selectedPresetIds.length > 0 && (
+                    <span className="text-xs font-medium text-blue-400 bg-blue-500/10 px-2 py-0.5 rounded-md border border-blue-500/20">
+                        {selectedPresetIds.length} preset{selectedPresetIds.length === 1 ? '' : 's'} selected
+                    </span>
+                )}
+            </div>
+
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                 {REFINE_PRESETS.map((preset) => {
-                    const isSelected = currentInstruction === preset.instruction;
+                    const isSelected = selectedPresetIds.includes(preset.id);
 
                     return (
                         <button
                             key={preset.id}
-                            onClick={() => onSelectPreset(preset.instruction)}
+                            onClick={() => onTogglePreset(preset.id)}
                             disabled={isApplying}
                             className={`
                                 group text-left p-3 rounded-xl border transition-all relative overflow-hidden

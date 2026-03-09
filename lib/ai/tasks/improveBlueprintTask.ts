@@ -34,6 +34,8 @@ CURRENT BLUEPRINT TO IMPROVE:
 ${JSON.stringify(input.currentBlueprint, null, 2)}
 
 INSTRUCTIONS FOR IMPROVEMENT:
+The user has provided the following directives for refining the architecture. If Architectural Presets are provided, you MUST explicitly adhere to their goals within the returned blueprint.
+
 ${customInstruction}
 
 Return a pure JSON object (no markdown formatting, no backticks, no markdown code blocks) matching the exact same TypeScript interface:

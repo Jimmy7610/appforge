@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
-import { Suspense, useState, useEffect } from "react";
-import { BackToDashboard } from "@/components/back-to-dashboard";
 import JSZip from "jszip";
+import { downloadZip } from "@/lib/export/download-zip";
+import { REFINE_PRESETS } from "@/lib/projects/refinePresets";
 import { generateBlueprint, type Blueprint } from "@/lib/ai/generateBlueprint";
 import { improveBlueprint } from "@/lib/ai/improveBlueprint";
 import { explainBlueprint } from "@/lib/ai/explainBlueprint";
@@ -71,6 +70,7 @@ function BlueprintContent() {
     // Improve UI state
     const [isImproving, setIsImproving] = useState(false);
     const [instructions, setInstructions] = useState("");
+    const [selectedPresets, setSelectedPresets] = useState<string[]>([]);
     const [diffResult, setDiffResult] = useState<BlueprintDiff | null>(null);
 
     // Explain UI state
@@ -229,16 +229,39 @@ function BlueprintContent() {
     const handleImprove = async () => {
         if (!blueprint) return;
         setIsImproving(true);
+
+        const customInstruction = instructions.trim();
+        const hasPresets = selectedPresets.length > 0;
+
+        if (!customInstruction && !hasPresets) {
+            setIsImproving(false);
+            return;
+        }
+
+        // Gather preset instructions
+        const presetInstructions = selectedPresets
+            .map(id => REFINE_PRESETS.find(p => p.id === id)?.instruction)
+            .filter(Boolean)
+            .join("\n- ");
+
+        // Combine instructions for AI
+        let combinedInstructions = customInstruction;
+        if (hasPresets) {
+            combinedInstructions = `Selected Architectural Presets to Apply:\n- ${presetInstructions}\n\nUser Custom Instructions:\n${customInstruction}`;
+        }
+
         try {
             const bp = await improveBlueprint({
                 originalInput: { idea, platform, businessModel, targetUsers, coreFeature },
                 currentBlueprint: blueprint,
-                instructions: instructions
+                instructions: combinedInstructions.trim()
             });
             const diff = diffBlueprints(blueprint, bp);
             setDiffResult(diff);
             setBlueprint(bp);
             setInstructions(""); // Clear input on success
+            setSelectedPresets([]);
+            window.alert("Blueprint architecture improved successfully based on selection.");
             setExplanation(null); // Clear previous explanation since architecture changed
             setDiagram(null); // Clear previous diagram since architecture changed
             setRenderedSvg(""); // Clear previous rendered SVG
@@ -1050,7 +1073,10 @@ function BlueprintContent() {
                                         onKeyDown={(e) => {
                                             if (e.key === "Enter" && !e.shiftKey) {
                                                 e.preventDefault();
-                                                handleImprove();
+                                                const hasContent = instructions.trim().length > 0 || selectedPresets.length > 0;
+                                                if (hasContent) {
+                                                    handleImprove();
+                                                }
                                             }
                                         }}
                                     />
@@ -1063,8 +1089,14 @@ function BlueprintContent() {
 
                                 {/* Refine Presets Integration */}
                                 <RefinePresets
-                                    onSelectPreset={(instruction) => setInstructions(instruction)}
-                                    currentInstruction={instructions}
+                                    onTogglePreset={(id) => {
+                                        setSelectedPresets(prev =>
+                                            prev.includes(id)
+                                                ? prev.filter(p => p !== id)
+                                                : [...prev, id]
+                                        );
+                                    }}
+                                    selectedPresetIds={selectedPresets}
                                     isApplying={isImproving || isGenerating || isExplaining || isGeneratingDiagram || isCritiquing || isSuggesting}
                                 />
 
@@ -1117,7 +1149,7 @@ function BlueprintContent() {
 
                                     <button
                                         onClick={handleImprove}
-                                        disabled={isImproving}
+                                        disabled={isImproving || (!instructions.trim() && selectedPresets.length === 0)}
                                         className="flex order-1 lg:order-2 min-w-[200px] w-full lg:w-auto items-center justify-center gap-2 rounded-xl bg-blue-600 h-11 px-8 text-sm font-bold text-white shadow-lg shadow-blue-500/20 transition-all hover:bg-blue-500 hover:shadow-blue-500/30 active:scale-[0.98] disabled:opacity-50"
                                     >
                                         {isImproving ? (
