@@ -5,6 +5,7 @@ import { buildApiLayer } from "./buildApiLayer";
 import { buildDatabaseSchema } from "./buildDatabaseSchema";
 import { buildResourceTypes } from "./buildResourceTypes";
 import { buildMockData } from "./buildMockData";
+import { buildTypes } from "./buildTypes";
 
 export function buildProjectBundle(input: ExportInput) {
     const { idea, platform, businessModel, targetUsers, coreFeature, blueprint, displayMap } = input;
@@ -159,30 +160,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button";`;
 
-    const typesContent = `export type Project = {
-  id: string;
-  title: string;
-  platform: string;
-  businessModel: string;
-  targetUsers: string;
-  coreFeature: string;
-  createdAt: string;
-};
 
-export type User = {
-  id: string;
-  email: string;
-  name?: string;
-  role: "admin" | "user";
-  createdAt: string;
-};
-
-export type DashboardStat = {
-  label: string;
-  value: number | string;
-  trend?: string;
-  trendDirection?: "up" | "down" | "neutral";
-};`;
 
     const globalsCssContent = `@tailwind base;
 @tailwind components;
@@ -344,7 +322,7 @@ export function StatCard({ label, value, helperText }: StatCardProps) {
         "app/api/health/route.ts": healthRouteContent,
         "components/ui/button.tsx": buttonComponentContent,
         "components/dashboard/stat-card.tsx": statCardContent,
-        "lib/types.ts": typesContent,
+
 
     };
 
@@ -354,7 +332,8 @@ export function StatCard({ label, value, helperText }: StatCardProps) {
     const schemaFiles = buildDatabaseSchema({ databaseTables: blueprint.databaseTables });
     const resourceFiles = buildResourceTypes({ blueprint, detectedFeatures });
     const mockFiles = buildMockData({ idea: idea || "", platformLabel, modelLabel, targetUsers: targetUsers || "", coreFeature: coreFeature || "", blueprint, detectedFeatures });
-    Object.assign(files, featureFiles, apiFiles, schemaFiles, resourceFiles, mockFiles);
+    const typeFiles = buildTypes({ blueprint, detectedFeatures });
+    Object.assign(files, featureFiles, apiFiles, schemaFiles, resourceFiles, mockFiles, typeFiles);
 
     return {
         projectName: idea || "appforge-project",
