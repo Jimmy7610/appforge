@@ -120,13 +120,13 @@ export default function SettingsPage() {
     };
 
     if (!mounted) {
-        return <div className="min-h-screen bg-[#0A0A0A] p-6 flex justify-center items-center">
+        return <div className="p-6 flex justify-center items-center">
             <div className="h-8 w-8 animate-spin rounded-full border-4 border-zinc-800 border-t-white"></div>
         </div>;
     }
 
     return (
-        <main className="min-h-screen bg-[#0A0A0A] p-6 pb-24 text-zinc-100">
+        <main className="p-6 pb-24 text-zinc-100">
             <div className="mx-auto max-w-4xl">
                 {/* Header */}
                 <div className="mb-12 flex items-center justify-between">

@@ -94,7 +94,7 @@ function PreviewContent() {
 
     if (isLoading) {
         return (
-            <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+            <div className="flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <RefreshCw className="w-10 h-10 text-blue-500 animate-spin" />
                     <p className="text-sm font-medium text-zinc-400">Assembling project preview...</p>
@@ -190,7 +190,7 @@ function PreviewContent() {
 export default function PreviewPage() {
     return (
         <Suspense fallback={
-            <div className="flex min-h-screen items-center justify-center bg-zinc-950">
+            <div className="flex items-center justify-center">
                 <RefreshCw className="w-8 h-8 text-blue-500 animate-spin" />
             </div>
         }>

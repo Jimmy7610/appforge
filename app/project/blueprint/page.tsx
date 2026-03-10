@@ -1644,7 +1644,7 @@ function BlueprintContent() {
 
 export default function BlueprintPreview() {
     return (
-        <div className="min-h-screen bg-zinc-950 text-zinc-50 font-sans selection:bg-blue-500/30">
+        <div className="text-zinc-50 font-sans selection:bg-blue-500/30">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 pb-32">
                 {/* Header */}
                 <header className="mb-12">

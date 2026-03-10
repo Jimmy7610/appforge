@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function Home() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-950 px-4 text-white selection:bg-blue-500/30">
+    <div className="flex flex-col items-center justify-center px-4 text-white selection:bg-blue-500/30">
       {/* Background glow effect */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden">
         <div className="h-[40rem] w-[40rem] rounded-full bg-blue-500 opacity-20 blur-[100px]"></div>

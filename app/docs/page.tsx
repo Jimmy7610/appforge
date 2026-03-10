@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function DocsPage() {
     return (
-        <div className="bg-zinc-950 text-zinc-300 min-h-screen selection:bg-blue-500/30">
+        <div className="text-zinc-300 selection:bg-blue-500/30">
             <div className="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
 
                 {/* Header Section */}

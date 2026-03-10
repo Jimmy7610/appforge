@@ -197,7 +197,7 @@ export default function Dashboard() {
     // Prevent hydration mismatch by returning null until mounted on client
     if (!mounted) {
         return (
-            <div className="flex min-h-screen flex-col bg-zinc-950 text-white selection:bg-blue-500/30">
+            <div className="flex flex-col text-white selection:bg-blue-500/30">
                 <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
                     <div className="mb-8 flex flex-col items-start justify-between gap-4 border-b border-white/10 pb-6 sm:flex-row sm:items-center">
                         <h1 className="text-3xl font-bold tracking-tight text-white">Dashboard</h1>
@@ -208,7 +208,7 @@ export default function Dashboard() {
     }
 
     return (
-        <div className="flex min-h-screen flex-col bg-zinc-950 text-white selection:bg-blue-500/30">
+        <div className="flex flex-col text-white selection:bg-blue-500/30">
             <main className="mx-auto w-full max-w-5xl flex-1 px-4 py-8 sm:px-6 lg:px-8">
 
                 {/* Header section */}

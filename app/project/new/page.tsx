@@ -16,7 +16,7 @@ export default function CreateProject() {
     };
 
     return (
-        <div className="flex min-h-screen flex-col bg-zinc-950 text-white selection:bg-blue-500/30">
+        <div className="flex flex-col text-white selection:bg-blue-500/30">
             <main className="mx-auto w-full max-w-3xl flex-1 px-4 py-12 sm:px-6 lg:px-8 flex flex-col justify-center">
 
                 {/* Header section */}

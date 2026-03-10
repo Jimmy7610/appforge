@@ -77,7 +77,7 @@ export default function LibraryPage() {
     if (!mounted) return null;
 
     return (
-        <main className="min-h-screen bg-zinc-950 px-6 py-12 lg:px-12">
+        <main className="px-6 py-12 lg:px-12">
             <div className="mx-auto max-w-7xl">
                 {/* Header */}
                 <div className="mb-12 flex flex-col gap-6 sm:flex-row sm:items-end sm:justify-between">
