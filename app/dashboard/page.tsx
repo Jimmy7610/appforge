@@ -8,6 +8,7 @@ import { useRouter } from "next/navigation";
 import { parseShareBlueprint } from "@/lib/import/parseShareBlueprint";
 import { loadSavedProjects, saveProjects } from "@/lib/projects/storage";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { formatTimestamp } from "@/lib/utils/date-format";
 
 type SavedProject = {
     id: string;
@@ -372,8 +373,8 @@ export default function Dashboard() {
                                     className="flex flex-col justify-between rounded-2xl border border-white/10 bg-white/5 p-6 shadow-lg backdrop-blur-sm transition-all hover:border-white/20"
                                 >
                                     <div>
-                                        <div className="mb-4 flex items-center justify-between text-xs text-zinc-500">
-                                            <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+                                        <div className="mb-4 flex items-center justify-between text-[10px] text-zinc-500">
+                                            <span>{formatTimestamp(project.createdAt)}</span>
                                             <span className="rounded-full bg-white/10 px-2 py-1 text-zinc-300">
                                                 {displayMap[project.platform] || project.platform}
                                             </span>
