@@ -17,6 +17,7 @@ function ProjectDetailsForm() {
 
     const handleGenerate = () => {
         if (!targetUsers.trim() || !coreFeature.trim()) {
+            window.alert("Please fill in all required fields (Target Users and Core Feature) to generate your blueprint.");
             return;
         }
 

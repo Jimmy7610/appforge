@@ -53,7 +53,10 @@ export default function Dashboard() {
         return `/project/blueprint?id=${project.id}`;
     };
 
-    const handleDelete = (id: string) => {
+    const handleDelete = (id: string, e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
         const confirmDelete = window.confirm("Are you sure you want to delete this blueprint?");
         if (!confirmDelete) return;
 
@@ -61,6 +64,7 @@ export default function Dashboard() {
             const updatedProjects = projects.filter((project) => project.id !== id);
             setProjects(updatedProjects);
             saveProjects(updatedProjects);
+            console.log(`[dashboard] Project ${id} deleted successfully.`);
         } catch (e) {
             console.error("Failed to delete project", e);
         }
@@ -272,19 +276,19 @@ export default function Dashboard() {
                 <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm">
                         <h3 className="text-sm font-medium text-zinc-400">Total Projects</h3>
-                        <p className="mt-2 text-3xl font-bold text-white">{totalProjects}</p>
+                        <p className="mt-2 text-3xl font-extrabold text-white">{totalProjects}</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm">
                         <h3 className="text-sm font-medium text-zinc-400">Web Apps</h3>
-                        <p className="mt-2 text-3xl font-bold text-white">{webAppsCount}</p>
+                        <p className="mt-2 text-3xl font-extrabold text-white">{webAppsCount}</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm">
                         <h3 className="text-sm font-medium text-zinc-400">SaaS Projects</h3>
-                        <p className="mt-2 text-3xl font-bold text-white">{saasCount}</p>
+                        <p className="mt-2 text-3xl font-extrabold text-white">{saasCount}</p>
                     </div>
                     <div className="rounded-2xl border border-white/10 bg-white/5 p-6 shadow-sm backdrop-blur-sm">
                         <h3 className="text-sm font-medium text-zinc-400">Recently Created</h3>
-                        <p className="mt-2 text-3xl font-bold text-white">{recentProjectsCount}</p>
+                        <p className="mt-2 text-3xl font-extrabold text-white">{recentProjectsCount}</p>
                         <p className="mt-1 text-xs text-zinc-500">Within the last 7 days</p>
                     </div>
                 </div>
@@ -406,7 +410,7 @@ export default function Dashboard() {
                                             Blueprint
                                         </Link>
                                         <button
-                                            onClick={() => handleDelete(project.id)}
+                                            onClick={(e) => handleDelete(project.id, e)}
                                             className="flex items-center justify-center rounded-full border border-red-500/10 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-400 transition-colors hover:bg-red-500/20 active:scale-95"
                                         >
                                             Delete

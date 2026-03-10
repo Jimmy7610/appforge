@@ -22,11 +22,16 @@ export const generateBlueprintTask: AITaskHandler<"generateBlueprint"> = {
 
     buildPrompt(input) {
         return `Generate a technical project blueprint for a new application.
-App Idea: ${input.idea || "A general web application"}
+App Idea: ${input.idea || "A general application"}
 Platform: ${input.platform || "Web"}
-Business Model: ${input.businessModel || "SaaS"}
+Business Model: ${input.businessModel || "Not specified"}
 Target Users: ${input.targetUsers || "General users"}
-Core Feature: ${input.coreFeature || "User authentication and dashboard"}
+Core Feature: ${input.coreFeature}
+
+INSTRUCTIONS:
+- You MUST respect the Platform and Business Model. If the platform is 'Mobile App', provide mobile-specific tech (e.g., Swift, Kotlin, React Native, Mobile UI components). If the platform is 'Desktop', suggest desktop frameworks (e.g., Electron, Tauri).
+- Do NOT default to SaaS/Web features (like RBAC, Paywalls) unless the Business Model is actually SaaS.
+- For Games, focus on Game Engine, Assets, Physics, and Rendering logic instead of standard CRUD/SaaS patterns.
 
 Return a pure JSON object (no markdown formatting, no backticks, no markdown code blocks) matching this exact TypeScript interface:
 {

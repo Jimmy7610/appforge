@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { Project } from "@/lib/ai/types";
@@ -13,18 +13,15 @@ export default function LibraryPage() {
     const [searchQuery, setSearchQuery] = useState("");
     const [sortBy, setSortBy] = useState<"newest" | "oldest" | "az">("newest");
     const [mounted, setMounted] = useState(false);
-
     useEffect(() => {
         setMounted(true);
-        loadProjects();
+        setProjects(loadSavedProjects()); // eslint-disable-line react-hooks/set-state-in-effect
     }, []);
 
-    const loadProjects = () => {
-        setProjects(loadSavedProjects());
-    };
-
     const handleDelete = (id: string, e: React.MouseEvent) => {
+        e.preventDefault();
         e.stopPropagation();
+        
         if (!window.confirm("Are you sure you want to delete this blueprint? This action cannot be undone.")) {
             return;
         }
@@ -116,7 +113,7 @@ export default function LibraryPage() {
                     <div className="flex items-center gap-3">
                         <select
                             value={sortBy}
-                            onChange={(e) => setSortBy(e.target.value as any)}
+                            onChange={(e) => setSortBy(e.target.value as "newest" | "oldest" | "az")}
                             className="rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-zinc-200 outline-none focus:border-white/30 transition-colors shadow-lg appearance-none cursor-pointer"
                         >
                             <option value="newest">Newest First</option>
@@ -151,8 +148,8 @@ export default function LibraryPage() {
                                         {project.platform}
                                     </div>
                                 </div>
-                                <h3 className="mb-2 text-xl font-bold text-white line-clamp-1">{project.idea}</h3>
-                                <p className="mb-6 text-sm leading-relaxed text-zinc-500 line-clamp-2">
+                                <h3 className="mb-2 text-xl font-bold text-white line-clamp-2">{project.idea || "Untitled Blueprint"}</h3>
+                                <p className="mb-6 text-sm leading-relaxed text-zinc-400 line-clamp-2">
                                     {project.coreFeature}
                                 </p>
                                 <div className="mt-auto flex items-center justify-between border-t border-white/5 pt-6">

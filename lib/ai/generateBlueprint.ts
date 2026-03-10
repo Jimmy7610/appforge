@@ -101,52 +101,44 @@ const roadmapSteps = {
  * Used as the default/placeholder implementation by all providers.
  */
 export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
-    const { coreFeature, idea } = input;
+    const { coreFeature, idea, platform, businessModel } = input;
+    const isMobile = platform === "mobile";
+    const isDesktop = platform === "desktop";
+    const isSaaS = businessModel === "saas";
 
     const mainFeature = (coreFeature?.trim() || idea?.trim()) || "Core application functionality";
 
     const features = [
         mainFeature,
-        pickRandom(authOptions),
-        pickRandom(dashboardOptions),
+        isSaaS ? pickRandom(authOptions) : "Local data storage",
+        isSaaS ? pickRandom(dashboardOptions) : "Core functional views",
         pickRandom(featureEnhancements),
         pickRandom(featureEnhancements)
     ];
 
-    // Base stack plus random additions
+    // Platform-specific tech stack
     const techStack = [
-        "Next.js (App Router)",
-        "Tailwind CSS",
-        "Supabase (Database & Auth)",
+        isMobile ? "React Native / Expo" : isDesktop ? "Tauri / Electron" : "Next.js (App Router)",
+        isMobile ? "NativeBase / Tamagui" : "Tailwind CSS",
+        isSaaS ? "Supabase (Auth & DB)" : "SQLite / Local Storage",
         "TypeScript",
         pickRandom(techStackOptions),
-        pickRandom(techStackOptions)
     ];
 
-    // Base tables plus random additions
+    // Platform-specific database extras
     const databaseTables = [
-        "users",
-        "profiles",
-        pickRandom(databaseExtras),
+        "app_config",
+        isSaaS ? "users" : "local_settings",
+        isSaaS ? "profiles" : "records",
         pickRandom(databaseExtras),
         pickRandom(databaseExtras)
     ];
 
-    // Deduplicate array values in case pickRandom picked the same element multiple times
-    const uniqueFeatures = Array.from(new Set(features));
-    const uniqueTechStack = Array.from(new Set(techStack));
-    const uniqueDatabaseTables = Array.from(new Set(databaseTables));
-
-    // Determine some deterministic API routes based on core inputs, then sprinkle random ones
     const apiRoutes = [
-        "POST /api/auth/login",
-        "POST /api/auth/register",
-        "GET /api/user/profile",
+        isSaaS ? "POST /api/auth/login" : "GET /api/local/data",
+        isSaaS ? "GET /api/user/profile" : "POST /api/local/sync",
         pickRandom(apiPatterns),
-        pickRandom(apiPatterns)
     ];
-
-    const uniqueApiRoutes = Array.from(new Set(apiRoutes));
 
     const roadmap = [
         `Phase 1: ${pickRandom(roadmapSteps.phase1)}`,
@@ -155,10 +147,10 @@ export function generateLocalBlueprint(input: BlueprintInput): Blueprint {
     ];
 
     return {
-        features: uniqueFeatures,
-        techStack: uniqueTechStack,
-        databaseTables: uniqueDatabaseTables,
-        apiRoutes: uniqueApiRoutes,
+        features: Array.from(new Set(features)),
+        techStack: Array.from(new Set(techStack)),
+        databaseTables: Array.from(new Set(databaseTables)),
+        apiRoutes: Array.from(new Set(apiRoutes)),
         roadmap,
         metadata: {
             provider: "local",
