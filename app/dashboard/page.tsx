@@ -7,6 +7,7 @@ import { ArrowRight, Trash2, Search, Filter, FolderPlus, Rocket, ArrowUpDown, Pl
 import { useRouter } from "next/navigation";
 import { parseShareBlueprint } from "@/lib/import/parseShareBlueprint";
 import { loadSavedProjects, saveProjects } from "@/lib/projects/storage";
+import { CustomSelect } from "@/components/ui/custom-select";
 
 type SavedProject = {
     id: string;
@@ -300,39 +301,42 @@ export default function Dashboard() {
                             />
                         </div>
                         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-                            <select
+                            <CustomSelect
                                 value={platformFilter}
-                                onChange={(e) => setPlatformFilter(e.target.value)}
-                                className="w-full sm:w-auto min-w-[160px] rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
-                            >
-                                <option value="all">All Platforms</option>
-                                <option value="web">Web App</option>
-                                <option value="mobile">Mobile App</option>
-                                <option value="desktop">Desktop App</option>
-                            </select>
-                            <select
+                                onChange={setPlatformFilter}
+                                minWidth="160px"
+                                options={[
+                                    { value: "all", label: "All Platforms" },
+                                    { value: "web", label: "Web App" },
+                                    { value: "mobile", label: "Mobile App" },
+                                    { value: "desktop", label: "Desktop App" },
+                                ]}
+                            />
+                            <CustomSelect
                                 value={businessModelFilter}
-                                onChange={(e) => setBusinessModelFilter(e.target.value)}
-                                className="w-full sm:w-auto min-w-[180px] rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
-                            >
-                                <option value="all">All Business Models</option>
-                                <option value="free">Free Tool</option>
-                                <option value="saas">SaaS</option>
-                                <option value="marketplace">Marketplace</option>
-                                <option value="internal">Internal Tool</option>
-                            </select>
+                                onChange={setBusinessModelFilter}
+                                minWidth="180px"
+                                options={[
+                                    { value: "all", label: "All Business Models" },
+                                    { value: "free", label: "Free Tool" },
+                                    { value: "saas", label: "SaaS" },
+                                    { value: "marketplace", label: "Marketplace" },
+                                    { value: "internal", label: "Internal Tool" },
+                                ]}
+                            />
                             <div className="flex items-center gap-3 w-full sm:w-auto">
                                 <span className="text-sm font-medium text-zinc-400 whitespace-nowrap hidden sm:block">Sort By</span>
-                                <select
+                                <CustomSelect
                                     value={sortOption}
-                                    onChange={(e) => setSortOption(e.target.value)}
-                                    className="w-full sm:w-auto min-w-[160px] rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-zinc-200 outline-none transition-colors focus:border-white/30 appearance-none"
-                                >
-                                    <option value="newest">Newest First</option>
-                                    <option value="oldest">Oldest First</option>
-                                    <option value="idea-az">Idea A-Z</option>
-                                    <option value="idea-za">Idea Z-A</option>
-                                </select>
+                                    onChange={setSortOption}
+                                    minWidth="160px"
+                                    options={[
+                                        { value: "newest", label: "Newest First" },
+                                        { value: "oldest", label: "Oldest First" },
+                                        { value: "idea-az", label: "Idea A-Z" },
+                                        { value: "idea-za", label: "Idea Z-A" },
+                                    ]}
+                                />
                             </div>
                         </div>
                     </div>
