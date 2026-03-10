@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Shield, Zap, Activity, Server, Radio, Building2, Rocket, Code2, Coins } from "lucide-react";
 import { REFINE_PRESETS, RefinePreset } from "@/lib/projects/refinePresets";
 
@@ -10,6 +11,8 @@ interface RefinePresetsProps {
 }
 
 export function RefinePresets({ onTogglePreset, selectedPresetIds = [], isApplying = false }: RefinePresetsProps) {
+    const [hoveredId, setHoveredId] = useState<string | null>(null);
+
     const getIcon = (type: RefinePreset["iconType"]) => {
         const className = "w-4 h-4";
         switch (type) {
@@ -25,6 +28,9 @@ export function RefinePresets({ onTogglePreset, selectedPresetIds = [], isApplyi
             default: return <Server className={className} />;
         }
     };
+
+    const displayId = hoveredId || (selectedPresetIds.length === 1 ? selectedPresetIds[0] : null);
+    const displayPreset = displayId ? REFINE_PRESETS.find(p => p.id === displayId) : null;
 
     return (
         <div className="mt-8 mb-4">
@@ -47,6 +53,10 @@ export function RefinePresets({ onTogglePreset, selectedPresetIds = [], isApplyi
                         <button
                             key={preset.id}
                             onClick={() => onTogglePreset(preset.id)}
+                            onMouseEnter={() => setHoveredId(preset.id)}
+                            onMouseLeave={() => setHoveredId(null)}
+                            onFocus={() => setHoveredId(preset.id)}
+                            onBlur={() => setHoveredId(null)}
                             disabled={isApplying}
                             className={`
                                 group text-left p-3 rounded-xl border transition-all relative overflow-hidden
@@ -77,6 +87,38 @@ export function RefinePresets({ onTogglePreset, selectedPresetIds = [], isApplyi
                         </button>
                     );
                 })}
+            </div>
+
+            {/* Details Panel */}
+            <div className={`
+                mt-4 p-5 rounded-xl border transition-all duration-300 min-h-[140px]
+                ${displayPreset ? 'bg-zinc-800/50 border-white/10' : 'bg-zinc-900/30 border-dashed border-white/5 flex items-center justify-center'}
+            `}>
+                {displayPreset ? (
+                    <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                        <div className="flex items-center gap-2 mb-2">
+                            <span className="text-blue-400">
+                                {getIcon(displayPreset.iconType)}
+                            </span>
+                            <h4 className="text-sm font-semibold text-white">{displayPreset.title}</h4>
+                        </div>
+                        <p className="text-sm text-zinc-300 mb-3 leading-relaxed">{displayPreset.details?.purpose}</p>
+                        <ul className="space-y-2">
+                            {displayPreset.details?.bullets.map((bullet, idx) => (
+                                <li key={idx} className="text-xs text-zinc-400 flex items-start gap-2.5">
+                                    <span className="text-blue-500/50 mt-0.5 whitespace-nowrap">―</span>
+                                    <span className="leading-snug">{bullet}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+                ) : (
+                    <p className="text-sm text-zinc-500/80 italic text-center">
+                        {selectedPresetIds.length > 1
+                            ? "Multiple presets selected. Hover over a preset card to see its logic."
+                            : "Hover over a preset card above to see how it restricts the architecture."}
+                    </p>
+                )}
             </div>
         </div>
     );
