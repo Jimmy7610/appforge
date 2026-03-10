@@ -25,6 +25,8 @@ import { MermaidDiagram } from "@/components/blueprint/mermaid-diagram";
 import { ArchitectureCritique } from "@/components/blueprint/architecture-critique";
 import { ArchitectureSuggestions } from "@/components/blueprint/architecture-suggestions";
 import { RefinePresets } from "@/components/blueprint/refine-presets";
+import { ArchitectureSimulator } from "@/components/blueprint/architecture-simulator";
+import { simulateArchitecture, type SimulationResult } from "@/lib/simulator";
 import { Project, BlueprintVersion, BlueprintCritique, ArchitectureSuggestionsResult } from "@/lib/ai/types";
 import { suggestArchitectureImprovements } from "@/lib/ai/suggestArchitectureImprovements";
 import {
@@ -97,6 +99,10 @@ function BlueprintContent() {
     // Suggestions UI state
     const [isSuggesting, setIsSuggesting] = useState(false);
     const [suggestions, setSuggestions] = useState<ArchitectureSuggestionsResult | null>(null);
+
+    // Simulation UI state
+    const [isSimulating, setIsSimulating] = useState(false);
+    const [simulation, setSimulation] = useState<SimulationResult | null>(null);
 
     useEffect(() => {
         setMounted(true);
@@ -399,6 +405,30 @@ function BlueprintContent() {
         } finally {
             setIsCritiquing(false);
         }
+    };
+
+    const handleSimulate = () => {
+        if (!blueprint) return;
+
+        setIsSimulating(true);
+        // Simulator is rapid and local/deterministic as requested
+        setTimeout(() => {
+            try {
+                const result = simulateArchitecture(blueprint, {
+                    idea: idea || "",
+                    platform: platform || "",
+                    businessModel: businessModel || "",
+                    targetUsers: targetUsers || "",
+                    coreFeature: coreFeature || ""
+                });
+                setSimulation(result);
+            } catch (error) {
+                console.error("Simulation failed:", error);
+                window.alert("Failed to run architecture simulation.");
+            } finally {
+                setIsSimulating(false);
+            }
+        }, 600); // Slight delay for premium feel
     };
 
     const handleDownloadSVG = () => {
@@ -1147,6 +1177,20 @@ function BlueprintContent() {
                                             )}
                                             Critique Architecture
                                         </button>
+                                        <button
+                                            onClick={handleSimulate}
+                                            disabled={isSimulating}
+                                            className="flex min-w-[160px] flex-1 sm:flex-initial items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/5 h-11 px-6 text-sm font-semibold text-zinc-300 transition-all hover:bg-white/10 hover:text-white active:scale-95 disabled:opacity-50"
+                                        >
+                                            {isSimulating ? (
+                                                <div className="h-4 w-4 animate-spin rounded-full border-2 border-zinc-500 border-t-white"></div>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-4 h-4 text-blue-400">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" d="M15.59 14.37a6 6 0 01-5.84 7.38v-4.8m5.84-2.58a14.98 14.98 0 006.16-12.12A14.98 14.98 0 009.631 8.41m5.96 5.96a14.926 14.926 0 011.03 5.483 14.926 14.926 0 01-5.841-2.58m5.96-5.96A14.926 14.926 0 0017.34 4.54a14.926 14.926 0 00-5.84 2.58M15.59 14.37A14.926 14.926 0 0017.34 9.63m-1.75 4.74a14.926 14.926 0 01-5.96-5.96M9.63 8.41a14.93 14.93 0 01-1.03-5.483 14.93 14.93 0 015.84 2.58m-4.81 2.903a14.987 14.987 0 00-6.16 12.122 14.987 14.987 0 0012.122-6.16m-6.022-6.022a14.98 14.98 0 016.16-12.122m-6.16 12.122a14.98 14.98 0 00-12.122 6.16" />
+                                                </svg>
+                                            )}
+                                            Simulate Architecture
+                                        </button>
                                     </div>
 
                                     <button
@@ -1345,6 +1389,18 @@ function BlueprintContent() {
                         critique && (
                             <div className="mb-8">
                                 <ArchitectureCritique critique={critique} />
+                            </div>
+                        )
+                    }
+
+                    {/* Architecture Simulation UI */}
+                    {
+                        simulation && (
+                            <div className="mb-8 p-1 rounded-3xl bg-gradient-to-br from-blue-500/10 via-transparent to-purple-500/10 border border-white/5">
+                                <ArchitectureSimulator simulation={simulation} />
+                                <p className="mt-4 text-center text-[10px] text-zinc-500 italic pb-4">
+                                    Simulation generated locally based on current active blueprint state.
+                                </p>
                             </div>
                         )
                     }

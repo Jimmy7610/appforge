@@ -26,12 +26,15 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-zinc-950`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-zinc-950 flex flex-col`}
       >
         <Navbar />
         <main className="flex-1 w-full mx-auto">
           {children}
         </main>
+        <footer className="py-6 text-center text-sm text-zinc-500 border-t border-white/5 mt-auto">
+          Copyright © Jimmy Eliasson. All rights reserved.
+        </footer>
       </body>
     </html>
   );
