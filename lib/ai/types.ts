@@ -50,8 +50,17 @@ export type CritiqueItem = {
     recommendation: string;
 };
 
+export type ArchitectureScores = {
+    overall: number;
+    security: number;
+    performance: number;
+    scalability: number;
+    maintainability: number;
+};
+
 export type BlueprintCritique = {
     overallAssessment: string;
+    scores?: ArchitectureScores;
     risks: CritiqueItem[];
     bottlenecks: CritiqueItem[];
     securityConcerns: CritiqueItem[];

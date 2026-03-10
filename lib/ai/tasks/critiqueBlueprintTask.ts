@@ -38,12 +38,20 @@ Provide a structured critique covering:
 4. Security Concerns: Missing or weak security measures.
 5. Missing Considerations: Important architectural or infrastructure pieces not present in the current blueprint.
 6. Recommendations: Concrete, actionable steps to improve the blueprint.
-7. Priority/Severity: An overall level (low/medium/high).
-8. Summary: A very concise executive summary.
+7. Architecture Scores: Numerical scores (0-100) for Security, Performance, Scalability, and Maintainability, plus an overall score.
+8. Priority/Severity: An overall level (low/medium/high).
+9. Summary: A very concise executive summary.
 
 Return a pure JSON object matching this exact interface:
 {
     "overallAssessment": "String",
+    "scores": {
+        "overall": 0-100,
+        "security": 0-100,
+        "performance": 0-100,
+        "scalability": 0-100,
+        "maintainability": 0-100
+    },
     "risks": [{ "title": "String", "detail": "String", "severity": "low|medium|high", "recommendation": "String" }],
     "bottlenecks": [{ "title": "String", "detail": "String", "severity": "low|medium|high", "recommendation": "String" }],
     "securityConcerns": [{ "title": "String", "detail": "String", "severity": "low|medium|high", "recommendation": "String" }],
@@ -69,6 +77,13 @@ IMPORTANT:
 
         return {
             overallAssessment: parsed.overallAssessment || "Assessment unavailable",
+            scores: parsed.scores || {
+                overall: 70,
+                security: 70,
+                performance: 70,
+                scalability: 70,
+                maintainability: 70
+            },
             risks: ensureArray(parsed.risks),
             bottlenecks: ensureArray(parsed.bottlenecks),
             securityConcerns: ensureArray(parsed.securityConcerns),
@@ -141,8 +156,31 @@ IMPORTANT:
             });
         }
 
+        // Base Heuristic Scores
+        const scores = {
+            overall: 75,
+            security: 80,
+            performance: 75,
+            scalability: 70,
+            maintainability: 80
+        };
+
+        if (securityConcerns.length > 0) {
+            scores.security -= 20;
+            scores.overall -= 5;
+        }
+        if (bottlenecks.length > 0) {
+            scores.performance -= 15;
+            scores.overall -= 5;
+        }
+        if (risks.some(r => r.severity === "high")) {
+            scores.scalability -= 20;
+            scores.overall -= 10;
+        }
+
         return {
             overallAssessment: "This is a deterministically generated fallback critique based on common architectural patterns. While the initial structure is sound, several standard production concerns remain unaddressed.",
+            scores,
             risks,
             bottlenecks,
             securityConcerns,
